@@ -85,8 +85,8 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
         navigationController?.dismiss(animated: true)
     }
     
-    // Export the USDZ output by specifying the `.parametric` export option.
-    // Alternatively, `.mesh` exports a nonparametric file and `.all`
+    // Export the USDZ output by specifying the `.mesh` export option.
+    // Alternatively, `.parametric` exports the model as unit-sized cubes and `.all`
     // exports both in a single USDZ.
     @IBAction func exportResults(_ sender: UIButton) {
         let destinationFolderURL = FileManager.default.temporaryDirectory.appending(path: "Export")
@@ -97,8 +97,8 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
             let jsonEncoder = JSONEncoder()
             let jsonData = try jsonEncoder.encode(finalResults)
             try jsonData.write(to: capturedRoomURL)
-            try finalResults?.export(to: destinationURL, exportOptions: .parametric)
-            
+            try finalResults?.export(to: destinationURL, exportOptions: .mesh)
+
             let activityVC = UIActivityViewController(activityItems: [destinationFolderURL], applicationActivities: nil)
             activityVC.modalPresentationStyle = .popover
             
