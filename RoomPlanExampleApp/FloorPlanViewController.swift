@@ -142,6 +142,10 @@ class FloorPlanViewController: UIViewController {
     @objc private func exportFloorPlan() {
         let alert = UIAlertController(title: "Export Floor Plan", message: "Choose export format", preferredStyle: .actionSheet)
         
+        alert.addAction(UIAlertAction(title: "SVG Image", style: .default) { [weak self] _ in
+            self?.exportAsSVG()
+        })
+        
         alert.addAction(UIAlertAction(title: "PNG Image", style: .default) { [weak self] _ in
             self?.exportAsImage()
         })
@@ -165,6 +169,20 @@ class FloorPlanViewController: UIViewController {
     }
     
     // MARK: - Export Methods
+    
+    private func exportAsSVG() {
+        let exporter = SVGExporter()
+        let svgString = exporter.export(floorPlanData)
+        
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("FloorPlan.svg")
+        
+        do {
+            try svgString.write(to: tempURL, atomically: true, encoding: .utf8)
+            shareItems([tempURL], filename: "FloorPlan.svg")
+        } catch {
+            showError("Failed to export SVG: \(error.localizedDescription)")
+        }
+    }
     
     private func exportAsImage() {
         guard let hostingController = hostingController else { return }
@@ -240,14 +258,16 @@ class FloorPlanViewController: UIViewController {
 // MARK: - Export Data Model
 
 struct FloorPlanExportData: Codable {
-    var version: String = "1.0"
+    var version: String = "2.0"
     let generatedAt: Date
     let totalArea: Double
     let bounds: BoundsData
-    let outline: [[Double]]
+    let floorOutlines: [FloorOutlineData]
+    let walls: [WallData]
     let doors: [DoorData]
     let windows: [WindowData]
     let objects: [ObjectData]
+    let sections: [SectionData]
     
     struct BoundsData: Codable {
         let x: Double
@@ -256,18 +276,39 @@ struct FloorPlanExportData: Codable {
         let height: Double
     }
     
+    struct FloorOutlineData: Codable {
+        let id: String
+        let story: Int?
+        let area: Double
+        let outline: [[Double]]
+    }
+    
+    struct WallData: Codable {
+        let id: String
+        let startX: Double
+        let startY: Double
+        let endX: Double
+        let endY: Double
+        let length: Double
+    }
+    
     struct DoorData: Codable {
         let id: String
-        let x: Double
-        let y: Double
+        let startX: Double
+        let startY: Double
+        let endX: Double
+        let endY: Double
         let width: Double
         let angle: Double
+        let isOpen: Bool
     }
     
     struct WindowData: Codable {
         let id: String
-        let x: Double
-        let y: Double
+        let startX: Double
+        let startY: Double
+        let endX: Double
+        let endY: Double
         let width: Double
         let angle: Double
     }
@@ -275,11 +316,19 @@ struct FloorPlanExportData: Codable {
     struct ObjectData: Codable {
         let id: String
         let category: String
+        let label: String
         let x: Double
         let y: Double
         let width: Double
         let depth: Double
         let angle: Double
+    }
+    
+    struct SectionData: Codable {
+        let label: String
+        let x: Double
+        let y: Double
+        let story: Int?
     }
     
     init(from data: FloorPlanData) {
@@ -291,21 +340,43 @@ struct FloorPlanExportData: Codable {
             width: Double(data.bounds.width),
             height: Double(data.bounds.height)
         )
-        self.outline = data.roomOutline.map { [Double($0.x), Double($0.y)] }
+        self.floorOutlines = data.floorOutlines.map { outline in
+            FloorOutlineData(
+                id: outline.id.uuidString,
+                story: outline.story,
+                area: Double(outline.area),
+                outline: outline.outline.map { [Double($0.x), Double($0.y)] }
+            )
+        }
+        self.walls = data.walls.map { wall in
+            WallData(
+                id: wall.id.uuidString,
+                startX: Double(wall.start.x),
+                startY: Double(wall.start.y),
+                endX: Double(wall.end.x),
+                endY: Double(wall.end.y),
+                length: Double(wall.length)
+            )
+        }
         self.doors = data.doors.map { door in
             DoorData(
                 id: door.id.uuidString,
-                x: Double(door.position.x),
-                y: Double(door.position.y),
+                startX: Double(door.start.x),
+                startY: Double(door.start.y),
+                endX: Double(door.end.x),
+                endY: Double(door.end.y),
                 width: Double(door.width),
-                angle: Double(door.angle)
+                angle: Double(door.angle),
+                isOpen: door.isOpen
             )
         }
         self.windows = data.windows.map { window in
             WindowData(
                 id: window.id.uuidString,
-                x: Double(window.position.x),
-                y: Double(window.position.y),
+                startX: Double(window.start.x),
+                startY: Double(window.start.y),
+                endX: Double(window.end.x),
+                endY: Double(window.end.y),
                 width: Double(window.width),
                 angle: Double(window.angle)
             )
@@ -314,6 +385,7 @@ struct FloorPlanExportData: Codable {
             ObjectData(
                 id: obj.id.uuidString,
                 category: obj.category.rawValue,
+                label: obj.label,
                 x: Double(obj.position.x),
                 y: Double(obj.position.y),
                 width: Double(obj.width),
@@ -321,6 +393,13 @@ struct FloorPlanExportData: Codable {
                 angle: Double(obj.angle)
             )
         }
+        self.sections = data.sections.map { section in
+            SectionData(
+                label: section.label,
+                x: Double(section.center.x),
+                y: Double(section.center.y),
+                story: section.story
+            )
+        }
     }
 }
-

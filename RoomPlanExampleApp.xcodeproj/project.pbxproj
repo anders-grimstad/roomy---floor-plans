@@ -18,6 +18,7 @@
 		FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000001 /* FloorPlanGenerator.swift */; };
 		FP00000228D0000000000002 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000002 /* FloorPlanView.swift */; };
 		FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000003 /* FloorPlanViewController.swift */; };
+		FP00000428D0000000000004 /* SVGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000004 /* SVGExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		FP00000028D0000000000001 /* FloorPlanGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanGenerator.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000002 /* FloorPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanView.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000003 /* FloorPlanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanViewController.swift; sourceTree = "<group>"; };
+		FP00000028D0000000000004 /* SVGExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGExporter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +89,7 @@
 				FP00000028D0000000000001 /* FloorPlanGenerator.swift */,
 				FP00000028D0000000000002 /* FloorPlanView.swift */,
 				FP00000028D0000000000003 /* FloorPlanViewController.swift */,
+				FP00000028D0000000000004 /* SVGExporter.swift */,
 				ACEF94B62820AD2300776A9D /* Main.storyboard */,
 				71B6638328D0CABC00635A15 /* UnsupportedDevice.storyboard */,
 				ACEF94B92820AD2400776A9D /* Assets.xcassets */,
@@ -185,6 +188,7 @@
 				FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */,
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
 				FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */,
+				FP00000428D0000000000004 /* SVGExporter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

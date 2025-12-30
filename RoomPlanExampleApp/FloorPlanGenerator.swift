@@ -3,13 +3,14 @@ See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 Model layer that processes CapturedRoom data into drawable floor plan elements.
+Coordinate transformation logic ported from conversionscript.py for consistency.
 */
 
 import Foundation
 import RoomPlan
 import simd
 
-// MARK: - Transform Matrix Extensions (from guide)
+// MARK: - Transform Matrix Extensions
 
 extension simd_float4x4 {
     /// Extract euler angles from the transformation matrix
@@ -17,8 +18,10 @@ extension simd_float4x4 {
     /// y = rotation around Y axis (yaw)
     /// z = rotation around Z axis (roll)
     var eulerAngles: simd_float3 {
-        simd_float3(
-            x: asin(-self[2][1]),
+        // Clamp for asin stability (matching Python: max(-1.0, min(1.0, -at(2, 1))))
+        let v = max(-1.0, min(1.0, -self[2][1]))
+        return simd_float3(
+            x: asin(v),
             y: atan2(self[2][0], self[2][2]),
             z: atan2(self[0][1], self[1][1])
         )
@@ -35,8 +38,21 @@ extension simd_float4x4 {
     
     /// Get the 2D rotation for floor plan (guide formula)
     /// This is the rotation to apply when viewing from above
+    /// Matches Python: -(roll - yaw)
     var floorPlanRotation: CGFloat {
         return -CGFloat(eulerAngles.z - eulerAngles.y)
+    }
+    
+    /// Transform a 3D point by this matrix
+    /// Matches Python's mat4_transform_point for column-major matrices
+    func transformPoint(_ point: simd_float3) -> simd_float3 {
+        let p = simd_float4(point.x, point.y, point.z, 1.0)
+        let result = self * p
+        // Handle perspective division if needed
+        if abs(result.w - 1.0) > 1e-6 && result.w != 0 {
+            return simd_float3(result.x / result.w, result.y / result.w, result.z / result.w)
+        }
+        return simd_float3(result.x, result.y, result.z)
     }
 }
 
@@ -56,6 +72,11 @@ struct FloorPlanPoint: Equatable {
     }
     
     /// Create from world coordinates (applies the negation to X)
+    /// Matches Python's world_to_floorplan_2d: (-world[0], world[2])
+    static func fromWorld(_ world: simd_float3) -> FloorPlanPoint {
+        return FloorPlanPoint(-CGFloat(world.x), CGFloat(world.z))
+    }
+    
     static func fromWorld(x: Float, z: Float) -> FloorPlanPoint {
         return FloorPlanPoint(-CGFloat(x), CGFloat(z))
     }
@@ -82,23 +103,33 @@ struct FloorPlanWall: Identifiable {
     }
 }
 
-/// A door in the floor plan
+/// A door in the floor plan (now uses start/end like walls for consistency)
 struct FloorPlanDoor: Identifiable {
     let id: UUID
-    let position: FloorPlanPoint
+    let start: FloorPlanPoint
+    let end: FloorPlanPoint
     let width: CGFloat
     let angle: CGFloat
     let isOpen: Bool
     let parentWallId: UUID?
+    
+    var position: FloorPlanPoint {
+        FloorPlanPoint((start.x + end.x) / 2, (start.y + end.y) / 2)
+    }
 }
 
-/// A window in the floor plan
+/// A window in the floor plan (now uses start/end like walls for consistency)
 struct FloorPlanWindow: Identifiable {
     let id: UUID
-    let position: FloorPlanPoint
+    let start: FloorPlanPoint
+    let end: FloorPlanPoint
     let width: CGFloat
     let angle: CGFloat
     let parentWallId: UUID?
+    
+    var position: FloorPlanPoint {
+        FloorPlanPoint((start.x + end.x) / 2, (start.y + end.y) / 2)
+    }
 }
 
 /// Furniture/object categories for icons
@@ -122,7 +153,30 @@ enum FloorPlanObjectCategory: String {
     case stairs
     case unknown
     
+    /// SF Symbol name for use with Image(systemName:)
     var icon: String {
+        switch self {
+        case .sofa: return "sofa"
+        case .chair: return "chair"
+        case .table: return "table.furniture"
+        case .bed: return "bed.double"
+        case .storage: return "cabinet"
+        case .refrigerator: return "refrigerator"
+        case .stove, .oven: return "oven"
+        case .dishwasher: return "dishwasher"
+        case .washer, .dryer: return "washer"
+        case .sink: return "sink"
+        case .bathtub: return "bathtub"
+        case .toilet: return "toilet"
+        case .fireplace: return "fireplace"
+        case .television: return "tv"
+        case .stairs: return "stairs"
+        case .unknown: return "shippingbox"
+        }
+    }
+    
+    /// Emoji representation for text display
+    var emoji: String {
         switch self {
         case .sofa: return "🛋️"
         case .chair: return "🪑"
@@ -155,6 +209,49 @@ struct FloorPlanObject: Identifiable {
     let label: String
 }
 
+/// A section/room label in the floor plan
+struct FloorPlanSection: Identifiable {
+    let id = UUID()
+    let center: FloorPlanPoint
+    let label: String
+    let story: Int?
+}
+
+/// A floor outline (supports multiple floors/rooms)
+struct FloorPlanOutline: Identifiable {
+    let id: UUID
+    let outline: [FloorPlanPoint]
+    let story: Int?
+    let area: CGFloat
+    
+    var centroid: FloorPlanPoint {
+        guard !outline.isEmpty else { return FloorPlanPoint(0, 0) }
+        
+        // Shoelace centroid calculation
+        var a2: CGFloat = 0
+        var cx6: CGFloat = 0
+        var cy6: CGFloat = 0
+        
+        for i in 0..<outline.count {
+            let p0 = outline[i]
+            let p1 = outline[(i + 1) % outline.count]
+            let cross = p0.x * p1.y - p1.x * p0.y
+            a2 += cross
+            cx6 += (p0.x + p1.x) * cross
+            cy6 += (p0.y + p1.y) * cross
+        }
+        
+        if abs(a2) < 1e-9 {
+            // Fallback to average
+            let ax = outline.reduce(0) { $0 + $1.x } / CGFloat(outline.count)
+            let ay = outline.reduce(0) { $0 + $1.y } / CGFloat(outline.count)
+            return FloorPlanPoint(ax, ay)
+        }
+        
+        return FloorPlanPoint(cx6 / (3.0 * a2), cy6 / (3.0 * a2))
+    }
+}
+
 /// Dimension annotation for measurements
 struct FloorPlanDimension: Identifiable {
     let id = UUID()
@@ -172,21 +269,28 @@ struct FloorPlanDimension: Identifiable {
 
 /// Complete floor plan data ready for rendering
 struct FloorPlanData {
-    let roomOutline: [FloorPlanPoint]
+    let floorOutlines: [FloorPlanOutline]
     let walls: [FloorPlanWall]
     let doors: [FloorPlanDoor]
     let windows: [FloorPlanWindow]
     let objects: [FloorPlanObject]
+    let sections: [FloorPlanSection]
     let dimensions: [FloorPlanDimension]
     let bounds: CGRect
     let totalArea: CGFloat // in square meters
     
+    /// Convenience accessor for single-room scenarios
+    var roomOutline: [FloorPlanPoint] {
+        floorOutlines.first?.outline ?? []
+    }
+    
     static let empty = FloorPlanData(
-        roomOutline: [],
+        floorOutlines: [],
         walls: [],
         doors: [],
         windows: [],
         objects: [],
+        sections: [],
         dimensions: [],
         bounds: .zero,
         totalArea: 0
@@ -206,91 +310,85 @@ class FloorPlanGenerator {
     
     /// Generate complete floor plan data from the captured room
     func generate() -> FloorPlanData {
-        let outline = extractRoomOutline()
+        let outlines = extractFloorOutlines()
         let walls = extractWalls()
         let doors = extractDoors()
         let windows = extractWindows()
         let objects = extractObjects()
-        let bounds = calculateBounds(outline: outline, walls: walls, objects: objects)
-        let dimensions = generateDimensions(outline: outline, bounds: bounds)
-        let area = calculateArea(outline: outline)
+        let sections = extractSections()
+        let bounds = calculateBounds(outlines: outlines, walls: walls, doors: doors, windows: windows, objects: objects)
+        let dimensions = generateDimensions(outlines: outlines, bounds: bounds)
+        let totalArea = outlines.reduce(0) { $0 + $1.area }
         
         return FloorPlanData(
-            roomOutline: outline,
+            floorOutlines: outlines,
             walls: walls,
             doors: doors,
             windows: windows,
             objects: objects,
+            sections: sections,
             dimensions: dimensions,
             bounds: bounds,
-            totalArea: area
+            totalArea: totalArea
         )
     }
     
     // MARK: - Extraction Methods
     
-    private func extractRoomOutline() -> [FloorPlanPoint] {
-        guard let floor = capturedRoom.floors.first else { return [] }
-        
-        // IMPORTANT: polygonCorners are in the floor's LOCAL coordinate space!
-        // We need to transform them to world coordinates using the floor's transform matrix
-        let floorTransform = floor.transform
-        
-        return floor.polygonCorners.map { localCorner in
-            // Transform local corner to world coordinates
-            // localCorner is in the floor's local 2D space (x, y, 0)
-            let localPoint = simd_float4(localCorner.x, localCorner.y, localCorner.z, 1.0)
-            let worldPoint = floorTransform * localPoint
+    /// Calculate endpoints for a linear element (wall/door/window)
+    /// Matches Python's endpoints_from_transform_and_length
+    private func endpointsFromTransform(_ transform: simd_float4x4, length: Float) -> (simd_float3, simd_float3) {
+        let half = length / 2.0
+        // Local segment runs along +X/-X in the element's local frame
+        let p0Local = simd_float3(-half, 0, 0)
+        let p1Local = simd_float3(half, 0, 0)
+        return (transform.transformPoint(p0Local), transform.transformPoint(p1Local))
+    }
+    
+    private func extractFloorOutlines() -> [FloorPlanOutline] {
+        return capturedRoom.floors.compactMap { floor -> FloorPlanOutline? in
+            guard !floor.polygonCorners.isEmpty else { return nil }
             
-            // Guide's coordinate mapping: FloorPlan X = -World X, FloorPlan Y = World Z
-            return FloorPlanPoint.fromWorld(x: worldPoint.x, z: worldPoint.z)
+            let floorTransform = floor.transform
+            
+            let outline = floor.polygonCorners.map { localCorner -> FloorPlanPoint in
+                // Transform local corner to world coordinates
+                let localPoint = simd_float3(localCorner.x, localCorner.y, localCorner.z)
+                let worldPoint = floorTransform.transformPoint(localPoint)
+                return FloorPlanPoint.fromWorld(worldPoint)
+            }
+            
+            let area = calculatePolygonArea(outline)
+            
+            return FloorPlanOutline(
+                id: floor.identifier,
+                outline: outline,
+                story: floor.story,
+                area: area
+            )
         }
     }
     
     private func extractWalls() -> [FloorPlanWall] {
-        return capturedRoom.walls.compactMap { wall -> FloorPlanWall? in
-            let transform = wall.transform
-            let length = CGFloat(wall.dimensions.x)  // dimensions.x = wall length
-            let halfLength = length / 2
-            
-            // Guide's approach:
-            // 1. Position: -X for floor plan X, Z for floor plan Y
-            // 2. Rotation: -(eulerAngles.z - eulerAngles.y)
-            let centerX = -CGFloat(transform.position.x)  // Negate X per guide
-            let centerY = CGFloat(transform.position.z)
-            let rotation = transform.floorPlanRotation
-            
-            // Calculate endpoints from center, half-length, and rotation
-            // Points A and B are at (-halfLength, 0) and (halfLength, 0) in local space
-            // Rotated and translated to world space
-            let dx = cos(rotation) * halfLength
-            let dy = sin(rotation) * halfLength
-            
-            let start = FloorPlanPoint(centerX - dx, centerY - dy)
-            let end = FloorPlanPoint(centerX + dx, centerY + dy)
+        return capturedRoom.walls.map { wall -> FloorPlanWall in
+            let length = wall.dimensions.x
+            let (p0World, p1World) = endpointsFromTransform(wall.transform, length: length)
             
             return FloorPlanWall(
                 id: wall.identifier,
-                start: start,
-                end: end,
+                start: FloorPlanPoint.fromWorld(p0World),
+                end: FloorPlanPoint.fromWorld(p1World),
                 thickness: wallThickness,
-                length: length
+                length: CGFloat(length)
             )
         }
     }
     
     private func extractDoors() -> [FloorPlanDoor] {
-        return capturedRoom.doors.map { door in
-            let transform = door.transform
-            
-            // Guide's coordinate mapping: -X for floor plan X, Z for floor plan Y
-            let position = FloorPlanPoint.fromWorld(
-                x: transform.position.x,
-                z: transform.position.z
-            )
-            
-            // Guide's rotation formula
-            let angle = transform.floorPlanRotation
+        return capturedRoom.doors.map { door -> FloorPlanDoor in
+            let width = door.dimensions.x
+            let (p0World, p1World) = endpointsFromTransform(door.transform, length: width)
+            let angle = door.transform.floorPlanRotation
             
             // Check if door is open from the category enum
             let isOpen: Bool
@@ -302,8 +400,9 @@ class FloorPlanGenerator {
             
             return FloorPlanDoor(
                 id: door.identifier,
-                position: position,
-                width: CGFloat(door.dimensions.x),
+                start: FloorPlanPoint.fromWorld(p0World),
+                end: FloorPlanPoint.fromWorld(p1World),
+                width: CGFloat(width),
                 angle: angle,
                 isOpen: isOpen,
                 parentWallId: door.parentIdentifier
@@ -312,22 +411,16 @@ class FloorPlanGenerator {
     }
     
     private func extractWindows() -> [FloorPlanWindow] {
-        return capturedRoom.windows.map { window in
-            let transform = window.transform
-            
-            // Guide's coordinate mapping: -X for floor plan X, Z for floor plan Y
-            let position = FloorPlanPoint.fromWorld(
-                x: transform.position.x,
-                z: transform.position.z
-            )
-            
-            // Guide's rotation formula
-            let angle = transform.floorPlanRotation
+        return capturedRoom.windows.map { window -> FloorPlanWindow in
+            let width = window.dimensions.x
+            let (p0World, p1World) = endpointsFromTransform(window.transform, length: width)
+            let angle = window.transform.floorPlanRotation
             
             return FloorPlanWindow(
                 id: window.identifier,
-                position: position,
-                width: CGFloat(window.dimensions.x),
+                start: FloorPlanPoint.fromWorld(p0World),
+                end: FloorPlanPoint.fromWorld(p1World),
+                width: CGFloat(width),
                 angle: angle,
                 parentWallId: window.parentIdentifier
             )
@@ -335,22 +428,16 @@ class FloorPlanGenerator {
     }
     
     private func extractObjects() -> [FloorPlanObject] {
-        return capturedRoom.objects.map { object in
+        return capturedRoom.objects.map { object -> FloorPlanObject in
             let transform = object.transform
             
-            // Guide's coordinate mapping: -X for floor plan X, Z for floor plan Y
-            let position = FloorPlanPoint.fromWorld(
-                x: transform.position.x,
-                z: transform.position.z
-            )
-            
-            // Guide's rotation formula
+            // Center is just the transform applied to origin
+            let centerWorld = transform.transformPoint(simd_float3(0, 0, 0))
+            let position = FloorPlanPoint.fromWorld(centerWorld)
             let angle = transform.floorPlanRotation
-            
             let category = mapCategory(object.category)
             
             // Dimensions: x = width, y = height (vertical), z = depth
-            // For top-down 2D floor plan: width = x, depth = z
             return FloorPlanObject(
                 id: object.identifier,
                 position: position,
@@ -361,6 +448,39 @@ class FloorPlanGenerator {
                 label: categoryLabel(object.category)
             )
         }
+    }
+    
+    private func extractSections() -> [FloorPlanSection] {
+        return capturedRoom.sections.map { section -> FloorPlanSection in
+            // Section centers are in world space
+            let center = section.center
+            let center3 = simd_float3(center.x, center.y, center.z)
+            let position = FloorPlanPoint.fromWorld(center3)
+            
+            // Format label: convert camelCase to Title Case
+            let formattedLabel = formatSectionLabel(String(describing: section.label))
+            
+            return FloorPlanSection(
+                center: position,
+                label: formattedLabel,
+                story: section.story
+            )
+        }
+    }
+    
+    /// Format section label from camelCase to Title Case
+    /// Matches Python's format_section_label
+    private func formatSectionLabel(_ label: String) -> String {
+        let rawLabel = label
+        // Insert space before capitals
+        var result = ""
+        for (i, char) in rawLabel.enumerated() {
+            if char.isUppercase && i > 0 {
+                result += " "
+            }
+            result.append(char)
+        }
+        return result.isEmpty ? "Room" : result.capitalized
     }
     
     private func mapCategory(_ category: CapturedRoom.Object.Category) -> FloorPlanObjectCategory {
@@ -409,12 +529,32 @@ class FloorPlanGenerator {
     
     // MARK: - Calculation Methods
     
-    private func calculateBounds(outline: [FloorPlanPoint], walls: [FloorPlanWall], objects: [FloorPlanObject]) -> CGRect {
-        var allPoints: [FloorPlanPoint] = outline
+    private func calculateBounds(
+        outlines: [FloorPlanOutline],
+        walls: [FloorPlanWall],
+        doors: [FloorPlanDoor],
+        windows: [FloorPlanWindow],
+        objects: [FloorPlanObject]
+    ) -> CGRect {
+        var allPoints: [FloorPlanPoint] = []
+        
+        for outline in outlines {
+            allPoints.append(contentsOf: outline.outline)
+        }
         
         for wall in walls {
             allPoints.append(wall.start)
             allPoints.append(wall.end)
+        }
+        
+        for door in doors {
+            allPoints.append(door.start)
+            allPoints.append(door.end)
+        }
+        
+        for window in windows {
+            allPoints.append(window.start)
+            allPoints.append(window.end)
         }
         
         for object in objects {
@@ -434,10 +574,11 @@ class FloorPlanGenerator {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
     
-    private func generateDimensions(outline: [FloorPlanPoint], bounds: CGRect) -> [FloorPlanDimension] {
+    private func generateDimensions(outlines: [FloorPlanOutline], bounds: CGRect) -> [FloorPlanDimension] {
         var dimensions: [FloorPlanDimension] = []
         
-        // Calculate actual room extents from outline (not padded bounds)
+        guard let firstOutline = outlines.first else { return dimensions }
+        let outline = firstOutline.outline
         guard !outline.isEmpty else { return dimensions }
         
         let xs = outline.map { $0.x }
@@ -449,7 +590,6 @@ class FloorPlanGenerator {
         let actualWidth = actualMaxX - actualMinX
         let actualHeight = actualMaxY - actualMinY
         
-        // Add overall room dimensions (positioned outside the room)
         let dimOffset: CGFloat = 0.4
         
         // Width dimension (bottom)
@@ -494,15 +634,15 @@ class FloorPlanGenerator {
         return dimensions
     }
     
-    private func calculateArea(outline: [FloorPlanPoint]) -> CGFloat {
-        guard outline.count >= 3 else { return 0 }
+    private func calculatePolygonArea(_ polygon: [FloorPlanPoint]) -> CGFloat {
+        guard polygon.count >= 3 else { return 0 }
         
-        // Shoelace formula for polygon area
+        // Shoelace formula
         var area: CGFloat = 0
-        for i in 0..<outline.count {
-            let j = (i + 1) % outline.count
-            area += outline[i].x * outline[j].y
-            area -= outline[j].x * outline[i].y
+        for i in 0..<polygon.count {
+            let j = (i + 1) % polygon.count
+            area += polygon[i].x * polygon[j].y
+            area -= polygon[j].x * polygon[i].y
         }
         return abs(area) / 2
     }
