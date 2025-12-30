@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1496" height="1755" viewBox="0 0 1496 1755">
+<rect x="0" y="0" width="100%" height="100%" fill="white" />
+<polyline points="1455.77,721.26 1042.32,1073.80 290.65,1714.75 40.00,1420.80 405.24,1109.37 63.95,709.11 233.09,564.88 431.24,797.26 651.35,609.58 495.82,427.18 949.89,40.00 1233.50,265.84 1137.35,347.83 1455.77,721.26" stroke="#888" fill="none" stroke-width="2.00" />
+<text x="726.38" y="839.00" text-anchor="middle" dominant-baseline="alphabetic" font-family="Menlo, monospace" font-size="16" fill="#333">Room 1 (story 0)</text>
+<text x="726.38" y="859.00" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="14" fill="#2E8B57">73.1 m²</text>
+<line x1="495.82" y1="427.18" x2="949.89" y2="40.00" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1137.35" y1="347.83" x2="1455.77" y2="721.26" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="40.00" y1="1420.80" x2="405.24" y2="1109.37" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="290.65" y1="1714.75" x2="40.00" y2="1420.80" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="949.89" y1="40.00" x2="1233.50" y2="265.84" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="233.09" y1="564.88" x2="431.24" y2="797.26" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="431.24" y1="797.26" x2="651.35" y2="609.58" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="651.35" y1="609.58" x2="495.82" y2="427.18" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="63.95" y1="709.11" x2="233.09" y2="564.88" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1233.50" y1="265.84" x2="1137.35" y2="347.83" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="799.08" y1="785.63" x2="733.11" y2="708.27" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="625.16" y1="933.92" x2="582.97" y2="884.44" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="625.16" y1="933.92" x2="799.08" y2="785.63" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="513.93" y1="1028.77" x2="625.16" y2="933.92" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="471.74" y1="979.28" x2="513.93" y2="1028.77" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="471.74" y1="979.28" x2="582.97" y2="884.44" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1042.32" y1="1073.80" x2="861.99" y2="862.31" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1042.32" y1="1073.80" x2="290.65" y2="1714.75" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="405.24" y1="1109.37" x2="63.95" y2="709.11" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1455.77" y1="721.26" x2="1042.32" y2="1073.80" stroke="#111" stroke-width="7.20" stroke-linecap="square" opacity="1.000" />
+<line x1="1230.03" y1="268.80" x2="1160.53" y2="328.07" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="606.08" y1="1445.78" x2="441.65" y2="1585.99" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="812.46" y1="1269.81" x2="669.84" y2="1391.42" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="1000.38" y1="1109.57" x2="812.46" y2="1269.81" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="1213.01" y1="928.26" x2="1062.62" y2="1056.50" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="1448.28" y1="727.65" x2="1303.43" y2="851.16" stroke="#00AEEF" stroke-width="5.04" stroke-linecap="square" opacity="1.000" />
+<line x1="450.93" y1="780.47" x2="534.31" y2="709.38" stroke="#2E8B57" stroke-width="4.32" stroke-linecap="square" opacity="0.900" />
+<line x1="510.01" y1="415.08" x2="805.97" y2="162.72" stroke="#2E8B57" stroke-width="4.32" stroke-linecap="square" opacity="0.900" />
+<line x1="1297.89" y1="855.88" x2="1222.23" y2="920.39" stroke="#2E8B57" stroke-width="4.32" stroke-linecap="square" opacity="0.900" />
+<line x1="419.84" y1="1604.59" x2="352.73" y2="1661.82" stroke="#2E8B57" stroke-width="4.32" stroke-linecap="square" opacity="0.900" />
+<line x1="327.95" y1="1018.72" x2="269.62" y2="950.32" stroke="#2E8B57" stroke-width="4.32" stroke-linecap="square" opacity="0.900" />
+<g transform="translate(1151.68 667.86) rotate(-130.45)"><rect x="-83.52" y="-53.72" width="167.04" height="107.44" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1151.68" y="667.86" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">table</text>
+<g transform="translate(234.47 1593.26) rotate(49.55)"><rect x="-34.38" y="-36.08" width="68.76" height="72.15" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="234.47" y="1593.26" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">oven</text>
+<g transform="translate(439.63 1412.67) rotate(139.55)"><rect x="-119.94" y="-44.24" width="239.88" height="88.48" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="439.63" y="1412.67" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(1281.92 617.75) rotate(-130.45)"><rect x="-191.56" y="-65.13" width="383.13" height="130.26" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1281.92" y="617.75" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">sofa</text>
+<g transform="translate(565.95 988.87) rotate(139.55)"><rect x="-66.75" y="-3.39" width="133.51" height="6.79" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="565.95" y="988.87" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(162.37 1509.03) rotate(49.55)"><rect x="-67.06" y="-35.87" width="134.12" height="71.73" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="162.37" y="1509.03" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(236.35 1594.56) rotate(49.55)"><rect x="-35.64" y="-36.66" width="71.28" height="73.33" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="236.35" y="1594.56" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(1002.67 961.35) rotate(49.55)"><rect x="-87.13" y="-27.96" width="174.26" height="55.93" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1002.67" y="961.35" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(281.03 1647.44) rotate(49.55)"><rect x="-37.38" y="-36.36" width="74.77" height="72.72" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="281.03" y="1647.44" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(798.44 721.83) rotate(49.55)"><rect x="-34.45" y="-32.02" width="68.90" height="64.04" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="798.44" y="721.83" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">table</text>
+<g transform="translate(684.91 284.79) rotate(139.44)"><rect x="-16.61" y="-14.31" width="33.23" height="28.62" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="684.91" y="284.79" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<g transform="translate(757.38 1188.87) rotate(-40.45)"><rect x="-31.55" y="-37.37" width="63.11" height="74.74" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="757.38" y="1188.87" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<g transform="translate(582.87 496.07) rotate(49.55)"><rect x="-95.91" y="-21.54" width="191.82" height="43.08" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="582.87" y="496.07" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(1143.36 267.36) rotate(-133.10)"><rect x="-44.33" y="-50.90" width="88.65" height="101.81" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1143.36" y="267.36" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<g transform="translate(96.08 1429.99) rotate(49.55)"><rect x="-43.38" y="-31.64" width="86.75" height="63.28" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="96.08" y="1429.99" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(724.64 1150.47) rotate(-40.45)"><rect x="-145.74" y="-61.67" width="291.48" height="123.34" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="724.64" y="1150.47" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">table</text>
+<g transform="translate(1065.48 339.76) rotate(136.25)"><rect x="-41.66" y="-39.38" width="83.32" height="78.75" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1065.48" y="339.76" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<g transform="translate(237.24 1595.55) rotate(49.55)"><rect x="-45.59" y="-36.71" width="91.17" height="73.41" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="237.24" y="1595.55" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(1024.09 160.68) rotate(-138.72)"><rect x="-37.27" y="-41.10" width="74.53" height="82.21" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="1024.09" y="160.68" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<g transform="translate(296.82 1255.36) rotate(139.55)"><rect x="-180.95" y="-40.74" width="361.89" height="81.49" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="296.82" y="1255.36" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">storage</text>
+<g transform="translate(827.01 1063.19) rotate(-130.47)"><rect x="-31.55" y="-37.37" width="63.11" height="74.74" rx="4.00" fill="#FF6B6B" fill-opacity="0.250" stroke="#FF6B6B" stroke-width="1.00" /></g>
+<text x="827.01" y="1063.19" text-anchor="middle" dominant-baseline="middle" font-family="Menlo, monospace" font-size="10" fill="#AA2E2E">chair</text>
+<text x="12.00" y="20.00" font-family="Menlo, monospace" font-size="12" fill="#666">source: Room.json  ppm=120  refOrigin=on</text>
+</svg>
