@@ -19,6 +19,7 @@
 		FP00000228D0000000000002 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000002 /* FloorPlanView.swift */; };
 		FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000003 /* FloorPlanViewController.swift */; };
 		FP00000428D0000000000004 /* SVGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000004 /* SVGExporter.swift */; };
+		FP00000528D0000000000005 /* MinimapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000005 /* MinimapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		FP00000028D0000000000002 /* FloorPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanView.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000003 /* FloorPlanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanViewController.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000004 /* SVGExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGExporter.swift; sourceTree = "<group>"; };
+		FP00000028D0000000000005 /* MinimapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +88,7 @@
 				ACEF94B22820AD2300776A9D /* SceneDelegate.swift */,
 				ACEF94C52820AF6600776A9D /* OnboardingViewController.swift */,
 				ACEF94B42820AD2300776A9D /* RoomCaptureViewController.swift */,
+				FP00000028D0000000000005 /* MinimapView.swift */,
 				FP00000028D0000000000001 /* FloorPlanGenerator.swift */,
 				FP00000028D0000000000002 /* FloorPlanView.swift */,
 				FP00000028D0000000000003 /* FloorPlanViewController.swift */,
@@ -189,6 +192,7 @@
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
 				FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */,
 				FP00000428D0000000000004 /* SVGExporter.swift in Sources */,
+				FP00000528D0000000000005 /* MinimapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
