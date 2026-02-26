@@ -8,6 +8,7 @@ Updated to match conversionscript.py rendering style.
 
 import SwiftUI
 import RoomPlan
+import UIKit
 
 // MARK: - Floor Plan Color Scheme
 
@@ -61,6 +62,10 @@ extension Color {
 
 struct FloorPlanView: View {
     let floorPlanData: FloorPlanData
+    let retakeTitle: String
+    let onRetake: () -> Void
+    let onSave: () -> Void
+    let onExport: () -> Void
     let colors = FloorPlanColors()
     
     @State private var scale: CGFloat = 1.0
@@ -68,10 +73,11 @@ struct FloorPlanView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
     
-    @State private var showDimensions: Bool = true
+    @State private var showDimensions: Bool = false
     @State private var showFurniture: Bool = true
-    @State private var showGrid: Bool = true
+    @State private var showGrid: Bool = false
     @State private var showLabels: Bool = true
+    @State private var show3D: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -140,23 +146,9 @@ struct FloorPlanView: View {
                         }
                 )
                 
-                // Controls overlay
-                VStack {
-                    Spacer()
-                    controlsBar
-                        .padding(.bottom, 20)
-                }
-                
-                // Area display
-                VStack {
-                    HStack {
-                        Spacer()
-                        areaDisplay
-                            .padding(.top, 60)
-                            .padding(.trailing, 20)
-                    }
-                    Spacer()
-                }
+                headerOverlay
+                zoomControlsOverlay
+                viewOptionsDockOverlay
             }
         }
     }
@@ -486,83 +478,250 @@ struct FloorPlanView: View {
     
     // MARK: - UI Components
     
-    private var controlsBar: some View {
-        HStack(spacing: 16) {
-            Toggle(isOn: $showGrid) {
-                Image(systemName: "grid")
-            }
-            .toggleStyle(ControlToggleStyle())
-            
-            Toggle(isOn: $showDimensions) {
-                Image(systemName: "ruler")
-            }
-            .toggleStyle(ControlToggleStyle())
-            
-            Toggle(isOn: $showFurniture) {
-                Image(systemName: "sofa")
-            }
-            .toggleStyle(ControlToggleStyle())
-            
-            Toggle(isOn: $showLabels) {
-                Image(systemName: "text.bubble")
-            }
-            .toggleStyle(ControlToggleStyle())
-            
-            Divider()
-                .frame(height: 24)
-            
-            Button {
-                withAnimation(.spring()) {
-                    scale = min(scale * 1.5, 5.0)
+    private var headerOverlay: some View {
+        VStack(spacing: 12) {
+            HStack {
+                CapsuleButton(title: retakeTitle) {
+                    onRetake()
                 }
-            } label: {
-                Image(systemName: "plus.magnifyingglass")
+                Spacer()
+                Text("Floor Plan")
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
-            }
-            
-            Button {
-                withAnimation(.spring()) {
-                    scale = max(scale / 1.5, 0.5)
+                Spacer()
+                CapsuleButton(title: "Save") {
+                    onSave()
                 }
-            } label: {
-                Image(systemName: "minus.magnifyingglass")
-                    .foregroundColor(.white)
             }
+            .padding(.horizontal, 18)
+            .padding(.top, 10)
+            
+            AreaPill(area: floorPlanData.totalArea)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .frame(maxWidth: .infinity)
+        .padding(.top, 12)
+        .frame(maxHeight: .infinity, alignment: .top)
     }
     
-    private var areaDisplay: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text("AREA")
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundColor(colors.dimensionText)
-            Text(String(format: "%.1f m²", floorPlanData.totalArea))
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundColor(colors.areaText)
+    private var zoomControlsOverlay: some View {
+        VStack(spacing: 10) {
+            ZoomButton(symbol: "plus") {
+                withAnimation(.spring()) {
+                    scale = min(scale * 1.2, 5.0)
+                }
+            }
+            ZoomButton(symbol: "minus") {
+                withAnimation(.spring()) {
+                    scale = max(scale / 1.2, 0.5)
+                }
+            }
         }
-        .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+        .padding(.trailing, 18)
+        .padding(.bottom, 180)
+    }
+    
+    private var viewOptionsDockOverlay: some View {
+        VStack(spacing: 14) {
+            Text("VIEW OPTIONS")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.2)
+                .foregroundColor(Color.white.opacity(0.7))
+            
+            HStack(spacing: 16) {
+                OptionToggleButton(
+                    systemImage: "sofa",
+                    isOn: $showFurniture
+                )
+                OptionToggleButton(
+                    text: "Aa",
+                    isOn: $showLabels
+                )
+                OptionToggleButton(
+                    systemImage: "ruler",
+                    isOn: $showDimensions
+                )
+                OptionToggleButton(
+                    systemImage: "cube.transparent",
+                    isOn: $show3D
+                )
+            }
+            
+            Button {
+                onExport()
+            } label: {
+                Label("Export floor plan", systemImage: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color(hex: "6D7BFF"))
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 18)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 24, x: 0, y: 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 20)
     }
 }
 
-// MARK: - Custom Toggle Style
+// MARK: - Controls
 
-struct ControlToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            configuration.isOn.toggle()
-        } label: {
-            configuration.label
-                .foregroundColor(configuration.isOn ? .white : .gray)
-                .padding(8)
+private struct CapsuleButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+            Button(action: action) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
                 .background(
-                    configuration.isOn ? Color.white.opacity(0.2) : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 8)
+                    Capsule()
+                        .fill(Color.white.opacity(0.08))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
                 )
         }
+            .buttonStyle(.plain)
+    }
+}
+
+private struct AreaPill: View {
+    let area: CGFloat
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "square.resize")
+                .font(.system(size: 13, weight: .semibold))
+            Text(formatArea(area))
+                .font(.system(size: 16, weight: .semibold))
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(0.15))
+        )
+        .overlay(
+            Capsule()
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private func formatArea(_ value: CGFloat) -> String {
+        let formatter = NumberFormatter()
+        formatter.maximumFractionDigits = 1
+        formatter.minimumFractionDigits = 1
+        formatter.decimalSeparator = ","
+        let number = formatter.string(from: NSNumber(value: Double(value))) ?? String(format: "%.1f", Double(value))
+        return "\(number) m²"
+    }
+}
+
+private struct ZoomButton: View {
+    let symbol: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(symbol)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(0.12))
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct OptionToggleButton: View {
+    let systemImage: String?
+    let text: String?
+    @Binding var isOn: Bool
+
+    @State private var isPressed = false
+    private let feedback = UIImpactFeedbackGenerator(style: .light)
+
+    init(systemImage: String, isOn: Binding<Bool>) {
+        self.systemImage = systemImage
+        self.text = nil
+        self._isOn = isOn
+    }
+
+    init(text: String, isOn: Binding<Bool>) {
+        self.systemImage = nil
+        self.text = text
+        self._isOn = isOn
+    }
+
+    var body: some View {
+        let gradient = LinearGradient(
+            colors: [Color(hex: "5B5CFF"), Color(hex: "7A5CFF")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        let background = isOn ? AnyShapeStyle(gradient) : AnyShapeStyle(Color.white.opacity(0.1))
+        let foreground = isOn ? Color.white : Color.white.opacity(0.6)
+
+        return ZStack {
+            Circle()
+                .fill(background)
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+
+            if let systemImage = systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(foreground)
+            } else if let text = text {
+                Text(text)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(foreground)
+            }
+        }
+        .scaleEffect(isPressed ? 0.9 : 1.0)
+        .animation(.interpolatingSpring(stiffness: 260, damping: 16), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPressed {
+                        isPressed = true
+                        feedback.prepare()
+                        feedback.impactOccurred()
+                    }
+                }
+                .onEnded { _ in
+                    isPressed = false
+                    isOn.toggle()
+                }
+        )
     }
 }
 
@@ -626,6 +785,12 @@ struct FloorPlanView_Previews: PreviewProvider {
             totalArea: 20
         )
         
-        FloorPlanView(floorPlanData: sampleData)
+        FloorPlanView(
+            floorPlanData: sampleData,
+            retakeTitle: "Retake",
+            onRetake: {},
+            onSave: {},
+            onExport: {}
+        )
     }
 }

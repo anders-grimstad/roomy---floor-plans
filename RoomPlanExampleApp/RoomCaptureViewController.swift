@@ -81,6 +81,7 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
     
     private func startSession() {
         isScanning = true
+        resetScanState()
         roomCaptureView?.captureSession.run(configuration: roomCaptureSessionConfig)
         
         setActiveNavBar()
@@ -122,8 +123,10 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
             print("No captured room data available")
             return
         }
-        
-        let floorPlanVC = FloorPlanViewController(capturedRoom: capturedRoom)
+
+        let floorPlanVC = FloorPlanViewController(capturedRoom: capturedRoom, onRetake: { [weak self] in
+            self?.resetScanState()
+        })
         floorPlanVC.modalPresentationStyle = .fullScreen
         present(floorPlanVC, animated: true)
     }
@@ -174,6 +177,17 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
             self.doneButton?.tintColor = .systemBlue
             self.exportButton?.alpha = 1.0
             self.floorPlanButton.alpha = 1.0
+        }
+    }
+
+    private func resetScanState() {
+        finalResults = nil
+        exportButton?.isEnabled = false
+        floorPlanButton.isEnabled = false
+        activityIndicator?.stopAnimating()
+        if isScanning {
+            roomCaptureView?.captureSession.stop()
+            roomCaptureView?.captureSession.run(configuration: roomCaptureSessionConfig)
         }
     }
 }

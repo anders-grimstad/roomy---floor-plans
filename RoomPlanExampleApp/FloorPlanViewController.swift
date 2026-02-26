@@ -14,50 +14,30 @@ class FloorPlanViewController: UIViewController {
     // MARK: - Properties
     
     private var capturedRoom: CapturedRoom?
+    private var exportData: FloorPlanExportData?
+    private var onRetake: (() -> Void)?
     private var floorPlanData: FloorPlanData = .empty
     private var hostingController: UIHostingController<FloorPlanView>?
     
-    // MARK: - UI Elements
-    
-    private lazy var exportButton: UIButton = {
-        var config = UIButton.Configuration.filled()
-        config.title = "Export"
-        config.image = UIImage(systemName: "square.and.arrow.up")
-        config.imagePadding = 8
-        config.cornerStyle = .capsule
-        config.baseBackgroundColor = UIColor(red: 0.31, green: 0.80, blue: 0.64, alpha: 1.0) // #4ECCA3
-        config.baseForegroundColor = .black
-        
-        let button = UIButton(configuration: config)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(exportFloorPlan), for: .touchUpInside)
-        return button
-    }()
-    
-    private lazy var closeButton: UIButton = {
-        var config = UIButton.Configuration.plain()
-        config.image = UIImage(systemName: "xmark.circle.fill")
-        config.baseForegroundColor = .white.withAlphaComponent(0.7)
-        
-        let button = UIButton(configuration: config)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(dismissView), for: .touchUpInside)
-        return button
-    }()
-    
-    private lazy var titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Floor Plan"
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
-        label.textColor = .white
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-    
     // MARK: - Initialization
     
+    init(capturedRoom: CapturedRoom, onRetake: (() -> Void)? = nil) {
+        self.capturedRoom = capturedRoom
+        self.onRetake = onRetake
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    init(exportData: FloorPlanExportData) {
+        self.exportData = exportData
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+
     convenience init(capturedRoom: CapturedRoom) {
-        self.init()
+        self.init(capturedRoom: capturedRoom, onRetake: nil)
         self.capturedRoom = capturedRoom
     }
     
@@ -66,7 +46,7 @@ class FloorPlanViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setupUI()
+        view.backgroundColor = UIColor(red: 0.10, green: 0.10, blue: 0.18, alpha: 1.0) // #1A1A2E
         generateFloorPlan()
     }
     
@@ -74,47 +54,32 @@ class FloorPlanViewController: UIViewController {
         return .lightContent
     }
     
-    // MARK: - Setup
-    
-    private func setupUI() {
-        view.backgroundColor = UIColor(red: 0.10, green: 0.10, blue: 0.18, alpha: 1.0) // #1A1A2E
-        
-        // Add close button
-        view.addSubview(closeButton)
-        NSLayoutConstraint.activate([
-            closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            closeButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            closeButton.widthAnchor.constraint(equalToConstant: 44),
-            closeButton.heightAnchor.constraint(equalToConstant: 44)
-        ])
-        
-        // Add title
-        view.addSubview(titleLabel)
-        NSLayoutConstraint.activate([
-            titleLabel.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-        ])
-        
-        // Add export button
-        view.addSubview(exportButton)
-        NSLayoutConstraint.activate([
-            exportButton.centerYAnchor.constraint(equalTo: closeButton.centerYAnchor),
-            exportButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
-        ])
-    }
-    
     private func generateFloorPlan() {
-        guard let capturedRoom = capturedRoom else {
+        if let exportData = exportData {
+            floorPlanData = exportData.toFloorPlanData()
+        } else if let capturedRoom = capturedRoom {
+            let generator = FloorPlanGenerator(capturedRoom: capturedRoom)
+            floorPlanData = generator.generate()
+        } else {
             showError("No room data available")
             return
         }
         
-        // Generate floor plan data
-        let generator = FloorPlanGenerator(capturedRoom: capturedRoom)
-        floorPlanData = generator.generate()
-        
         // Create and embed SwiftUI view
-        let floorPlanView = FloorPlanView(floorPlanData: floorPlanData)
+        let retakeTitle = capturedRoom == nil ? "Back" : "Retake"
+        let floorPlanView = FloorPlanView(
+            floorPlanData: floorPlanData,
+            retakeTitle: retakeTitle,
+            onRetake: { [weak self] in
+                self?.handleRetake()
+            },
+            onSave: { [weak self] in
+                self?.saveScan()
+            },
+            onExport: { [weak self] in
+                self?.exportFloorPlan()
+            }
+        )
         let hostingController = UIHostingController(rootView: floorPlanView)
         hostingController.view.backgroundColor = .clear
         
@@ -134,10 +99,6 @@ class FloorPlanViewController: UIViewController {
     }
     
     // MARK: - Actions
-    
-    @objc private func dismissView() {
-        dismiss(animated: true)
-    }
     
     @objc private func exportFloorPlan() {
         let alert = UIAlertController(title: "Export Floor Plan", message: "Choose export format", preferredStyle: .actionSheet)
@@ -161,8 +122,8 @@ class FloorPlanViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         
         if let popover = alert.popoverPresentationController {
-            popover.sourceView = exportButton
-            popover.sourceRect = exportButton.bounds
+            popover.sourceView = view
+            popover.sourceRect = view.bounds
         }
         
         present(alert, animated: true)
@@ -185,13 +146,7 @@ class FloorPlanViewController: UIViewController {
     }
     
     private func exportAsImage() {
-        guard let hostingController = hostingController else { return }
-        
-        let renderer = UIGraphicsImageRenderer(size: hostingController.view.bounds.size)
-        let image = renderer.image { context in
-            hostingController.view.drawHierarchy(in: hostingController.view.bounds, afterScreenUpdates: true)
-        }
-        
+        guard let image = renderFloorPlanImage() else { return }
         shareItems([image], filename: "FloorPlan.png")
     }
     
@@ -241,8 +196,8 @@ class FloorPlanViewController: UIViewController {
         activityVC.modalPresentationStyle = .popover
         
         if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = exportButton
-            popover.sourceRect = exportButton.bounds
+            popover.sourceView = view
+            popover.sourceRect = view.bounds
         }
         
         present(activityVC, animated: true)
@@ -253,153 +208,70 @@ class FloorPlanViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
+
+    private func handleRetake() {
+        if let navigationController = navigationController, navigationController.viewControllers.first != self {
+            navigationController.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
+        }
+        onRetake?()
+    }
+
+    private func renderFloorPlanImage() -> UIImage? {
+        guard let hostingController = hostingController else { return nil }
+        hostingController.view.layoutIfNeeded()
+        let size = hostingController.view.bounds.size == .zero ? view.bounds.size : hostingController.view.bounds.size
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            hostingController.view.drawHierarchy(in: CGRect(origin: .zero, size: size), afterScreenUpdates: true)
+        }
+    }
+
+    private func saveScan() {
+        guard let thumbnail = renderFloorPlanImage() else {
+            showError("Failed to generate preview image.")
+            return
+        }
+
+        let exportData = FloorPlanExportData(from: floorPlanData)
+        let title = "Scan \(formatDate(Date()))"
+
+        do {
+            let store = SavedScansStore()
+            let record = try store.saveScan(title: title, exportData: exportData, thumbnail: thumbnail)
+            var usdzErrorMessage: String?
+
+            if let capturedRoom = capturedRoom {
+                do {
+                    let usdzURL = store.roomUSDZURL(for: record.id)
+                    try capturedRoom.export(to: usdzURL, exportOptions: .mesh)
+                } catch {
+                    usdzErrorMessage = error.localizedDescription
+                }
+            }
+
+            let alertTitle = usdzErrorMessage == nil ? "Saved" : "Saved with Issues"
+            let alertMessage: String
+            if let usdzErrorMessage = usdzErrorMessage {
+                alertMessage = "Scan saved, but USDZ export failed: \(usdzErrorMessage)"
+            } else {
+                alertMessage = "This scan is now available in Saved scans."
+            }
+
+            let alert = UIAlertController(title: alertTitle, message: alertMessage, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+        } catch {
+            showError("Failed to save scan: \(error.localizedDescription)")
+        }
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }
 
-// MARK: - Export Data Model
-
-struct FloorPlanExportData: Codable {
-    var version: String = "2.0"
-    let generatedAt: Date
-    let totalArea: Double
-    let bounds: BoundsData
-    let floorOutlines: [FloorOutlineData]
-    let walls: [WallData]
-    let doors: [DoorData]
-    let windows: [WindowData]
-    let objects: [ObjectData]
-    let sections: [SectionData]
-    
-    struct BoundsData: Codable {
-        let x: Double
-        let y: Double
-        let width: Double
-        let height: Double
-    }
-    
-    struct FloorOutlineData: Codable {
-        let id: String
-        let story: Int?
-        let area: Double
-        let outline: [[Double]]
-    }
-    
-    struct WallData: Codable {
-        let id: String
-        let startX: Double
-        let startY: Double
-        let endX: Double
-        let endY: Double
-        let length: Double
-    }
-    
-    struct DoorData: Codable {
-        let id: String
-        let startX: Double
-        let startY: Double
-        let endX: Double
-        let endY: Double
-        let width: Double
-        let angle: Double
-        let isOpen: Bool
-    }
-    
-    struct WindowData: Codable {
-        let id: String
-        let startX: Double
-        let startY: Double
-        let endX: Double
-        let endY: Double
-        let width: Double
-        let angle: Double
-    }
-    
-    struct ObjectData: Codable {
-        let id: String
-        let category: String
-        let label: String
-        let x: Double
-        let y: Double
-        let width: Double
-        let depth: Double
-        let angle: Double
-    }
-    
-    struct SectionData: Codable {
-        let label: String
-        let x: Double
-        let y: Double
-        let story: Int?
-    }
-    
-    init(from data: FloorPlanData) {
-        self.generatedAt = Date()
-        self.totalArea = Double(data.totalArea)
-        self.bounds = BoundsData(
-            x: Double(data.bounds.minX),
-            y: Double(data.bounds.minY),
-            width: Double(data.bounds.width),
-            height: Double(data.bounds.height)
-        )
-        self.floorOutlines = data.floorOutlines.map { outline in
-            FloorOutlineData(
-                id: outline.id.uuidString,
-                story: outline.story,
-                area: Double(outline.area),
-                outline: outline.outline.map { [Double($0.x), Double($0.y)] }
-            )
-        }
-        self.walls = data.walls.map { wall in
-            WallData(
-                id: wall.id.uuidString,
-                startX: Double(wall.start.x),
-                startY: Double(wall.start.y),
-                endX: Double(wall.end.x),
-                endY: Double(wall.end.y),
-                length: Double(wall.length)
-            )
-        }
-        self.doors = data.doors.map { door in
-            DoorData(
-                id: door.id.uuidString,
-                startX: Double(door.start.x),
-                startY: Double(door.start.y),
-                endX: Double(door.end.x),
-                endY: Double(door.end.y),
-                width: Double(door.width),
-                angle: Double(door.angle),
-                isOpen: door.isOpen
-            )
-        }
-        self.windows = data.windows.map { window in
-            WindowData(
-                id: window.id.uuidString,
-                startX: Double(window.start.x),
-                startY: Double(window.start.y),
-                endX: Double(window.end.x),
-                endY: Double(window.end.y),
-                width: Double(window.width),
-                angle: Double(window.angle)
-            )
-        }
-        self.objects = data.objects.map { obj in
-            ObjectData(
-                id: obj.id.uuidString,
-                category: obj.category.rawValue,
-                label: obj.label,
-                x: Double(obj.position.x),
-                y: Double(obj.position.y),
-                width: Double(obj.width),
-                depth: Double(obj.depth),
-                angle: Double(obj.angle)
-            )
-        }
-        self.sections = data.sections.map { section in
-            SectionData(
-                label: section.label,
-                x: Double(section.center.x),
-                y: Double(section.center.y),
-                story: section.story
-            )
-        }
-    }
-}
