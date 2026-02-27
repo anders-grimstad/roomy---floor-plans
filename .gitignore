@@ -5,6 +5,10 @@
 # Finder
 .DS_Store
 
+# Project-local artifacts
+.designs/
+Export/
+
 # Xcode - User files
 xcuserdata/
 
