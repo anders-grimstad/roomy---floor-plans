@@ -96,15 +96,30 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
     
     // Decide to post-process and show the final results.
     func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
+        if let error = error {
+            handleProcessingError(error, title: "Scan Processing Failed")
+            return false
+        }
         return true
     }
     
     // Access the final post-processed results.
     func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
+        if let error = error {
+            handleProcessingError(error, title: "Scan Processing Failed")
+            return
+        }
+
         finalResults = processedResult
-        self.exportButton?.isEnabled = true
-        self.floorPlanButton.isEnabled = true
-        self.activityIndicator?.stopAnimating()
+        exportButton?.isEnabled = true
+        floorPlanButton.isEnabled = true
+        activityIndicator?.stopAnimating()
+    }
+
+    func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: Error?) {
+        if let error = error {
+            handleProcessingError(error, title: "Scan Failed")
+        }
     }
     
     @IBAction func doneScanning(_ sender: UIBarButtonItem) {
@@ -185,10 +200,21 @@ class RoomCaptureViewController: UIViewController, RoomCaptureViewDelegate, Room
         exportButton?.isEnabled = false
         floorPlanButton.isEnabled = false
         activityIndicator?.stopAnimating()
-        if isScanning {
-            roomCaptureView?.captureSession.stop()
-            roomCaptureView?.captureSession.run(configuration: roomCaptureSessionConfig)
-        }
+    }
+
+    private func handleProcessingError(_ error: Error, title: String) {
+        finalResults = nil
+        exportButton?.isEnabled = false
+        floorPlanButton.isEnabled = false
+        activityIndicator?.stopAnimating()
+
+        let alert = UIAlertController(title: title, message: error.localizedDescription, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            guard let self = self, self.isScanning else { return }
+            self.roomCaptureView?.captureSession.stop()
+            self.roomCaptureView?.captureSession.run(configuration: self.roomCaptureSessionConfig)
+        })
+        present(alert, animated: true)
     }
 }
 

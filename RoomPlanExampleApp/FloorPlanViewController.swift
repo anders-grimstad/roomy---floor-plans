@@ -18,6 +18,7 @@ class FloorPlanViewController: UIViewController {
     private var onRetake: (() -> Void)?
     private var floorPlanData: FloorPlanData = .empty
     private var hostingController: UIHostingController<FloorPlanView>?
+    private var wasNavBarHidden: Bool?
     
     // MARK: - Initialization
     
@@ -48,6 +49,22 @@ class FloorPlanViewController: UIViewController {
         
         view.backgroundColor = UIColor(red: 0.10, green: 0.10, blue: 0.18, alpha: 1.0) // #1A1A2E
         generateFloorPlan()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if let navigationController = navigationController {
+            wasNavBarHidden = navigationController.isNavigationBarHidden
+            navigationController.setNavigationBarHidden(true, animated: false)
+            navigationItem.hidesBackButton = true
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if let navigationController = navigationController, let wasNavBarHidden = wasNavBarHidden {
+            navigationController.setNavigationBarHidden(wasNavBarHidden, animated: false)
+        }
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -147,7 +164,20 @@ class FloorPlanViewController: UIViewController {
     
     private func exportAsImage() {
         guard let image = renderFloorPlanImage() else { return }
-        shareItems([image], filename: "FloorPlan.png")
+        guard let pngData = image.pngData() else {
+            showError("Failed to generate PNG data.")
+            return
+        }
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("FloorPlan.png")
+        do {
+            try pngData.write(to: tempURL, options: .atomic)
+            let fileExists = FileManager.default.fileExists(atPath: tempURL.path)
+            let fileSize = (try? FileManager.default.attributesOfItem(atPath: tempURL.path)[.size]) as? NSNumber
+            shareItems([tempURL], filename: "FloorPlan.png")
+        } catch {
+            showError("Failed to export PNG: \(error.localizedDescription)")
+        }
     }
     
     private func exportAsPDF() {

@@ -15,10 +15,10 @@
 		ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94B92820AD2400776A9D /* Assets.xcassets */; };
 		ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */; };
 		ACEF94C62820AF6600776A9D /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEF94C52820AF6600776A9D /* OnboardingViewController.swift */; };
-		FP00000528D0000000000005 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000528D0000000000005 /* HomeViewController.swift */; };
-		FP00000628D0000000000006 /* SavedScansViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000628D0000000000006 /* SavedScansViewController.swift */; };
-		FP00000728D0000000000007 /* FloorPlanExportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000728D0000000000007 /* FloorPlanExportData.swift */; };
-		FP00000828D0000000000008 /* SavedScansStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000828D0000000000008 /* SavedScansStore.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000528D0000000000005 /* HomeViewController.swift */; };
+		A1B2C3D4E5F60718293A4B5D /* SavedScansViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000628D0000000000006 /* SavedScansViewController.swift */; };
+		A1B2C3D4E5F60718293A4B5E /* FloorPlanExportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000728D0000000000007 /* FloorPlanExportData.swift */; };
+		A1B2C3D4E5F60718293A4B5F /* SavedScansStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000828D0000000000008 /* SavedScansStore.swift */; };
 		FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000001 /* FloorPlanGenerator.swift */; };
 		FP00000228D0000000000002 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000002 /* FloorPlanView.swift */; };
 		FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000003 /* FloorPlanViewController.swift */; };
@@ -197,14 +197,14 @@
 				ACEF94B12820AD2300776A9D /* AppDelegate.swift in Sources */,
 				ACEF94B32820AD2300776A9D /* SceneDelegate.swift in Sources */,
 				ACEF94C62820AF6600776A9D /* OnboardingViewController.swift in Sources */,
-				FP00000528D0000000000005 /* HomeViewController.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* HomeViewController.swift in Sources */,
 				FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */,
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
 				FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */,
 				FP00000428D0000000000004 /* SVGExporter.swift in Sources */,
-				FP00000728D0000000000007 /* FloorPlanExportData.swift in Sources */,
-				FP00000828D0000000000008 /* SavedScansStore.swift in Sources */,
-				FP00000628D0000000000006 /* SavedScansViewController.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5E /* FloorPlanExportData.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5F /* SavedScansStore.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5D /* SavedScansViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

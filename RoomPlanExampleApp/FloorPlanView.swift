@@ -70,8 +70,8 @@ struct FloorPlanView: View {
     
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
+    @GestureState private var dragTranslation: CGSize = .zero
     @State private var lastScale: CGFloat = 1.0
-    @State private var lastOffset: CGSize = .zero
     
     @State private var showDimensions: Bool = false
     @State private var showFurniture: Bool = true
@@ -111,8 +111,11 @@ struct FloorPlanView: View {
                     }
                 }
                 .scaleEffect(scale)
-                .offset(offset)
-                .gesture(
+                .offset(CGSize(
+                    width: offset.width + dragTranslation.width,
+                    height: offset.height + dragTranslation.height
+                ))
+                .simultaneousGesture(
                     MagnificationGesture()
                         .onChanged { value in
                             let delta = value / lastScale
@@ -123,16 +126,16 @@ struct FloorPlanView: View {
                             lastScale = 1.0
                         }
                 )
-                .gesture(
+                .simultaneousGesture(
                     DragGesture()
-                        .onChanged { value in
-                            offset = CGSize(
-                                width: lastOffset.width + value.translation.width,
-                                height: lastOffset.height + value.translation.height
-                            )
+                        .updating($dragTranslation) { value, state, _ in
+                            state = value.translation
                         }
-                        .onEnded { _ in
-                            lastOffset = offset
+                        .onEnded { value in
+                            offset = CGSize(
+                                width: offset.width + value.translation.width,
+                                height: offset.height + value.translation.height
+                            )
                         }
                 )
                 .simultaneousGesture(
@@ -141,7 +144,6 @@ struct FloorPlanView: View {
                             withAnimation(.spring()) {
                                 scale = 1.0
                                 offset = .zero
-                                lastOffset = .zero
                             }
                         }
                 )
@@ -506,19 +508,21 @@ struct FloorPlanView: View {
     private var zoomControlsOverlay: some View {
         VStack(spacing: 10) {
             ZoomButton(symbol: "plus") {
+                let newScale = min(scale * 1.2, 5.0)
                 withAnimation(.spring()) {
-                    scale = min(scale * 1.2, 5.0)
+                    scale = newScale
                 }
             }
             ZoomButton(symbol: "minus") {
+                let newScale = max(scale / 1.2, 0.5)
                 withAnimation(.spring()) {
-                    scale = max(scale / 1.2, 0.5)
+                    scale = newScale
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-        .padding(.trailing, 18)
-        .padding(.bottom, 180)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .padding(.trailing, 16)
+        .padding(.bottom, 228)
     }
     
     private var viewOptionsDockOverlay: some View {
@@ -640,8 +644,8 @@ private struct ZoomButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(symbol)
-                .font(.system(size: 20, weight: .semibold))
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
                 .background(
