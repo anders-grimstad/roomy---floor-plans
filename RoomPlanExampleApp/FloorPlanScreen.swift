@@ -39,13 +39,11 @@ struct FloorPlanScreen: View {
     var body: some View {
         FloorPlanView(
             floorPlanData: floorPlanData,
-            retakeTitle: capturedRoom == nil ? "Back" : "Retake",
+            retakeTitle: "Back",
             onRetake: handleRetake,
             onSave: saveScan,
             onExport: { showExportFormatPicker = true }
         )
-        .ignoresSafeArea()
-        .preferredColorScheme(.dark)
         .statusBarHidden(false)
         .onAppear { generateFloorPlan() }
         .confirmationDialog("Export Floor Plan", isPresented: $showExportFormatPicker, titleVisibility: .visible) {

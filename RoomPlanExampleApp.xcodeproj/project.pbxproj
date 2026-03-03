@@ -7,46 +7,42 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		71B6638528D0CABC00635A15 /* UnsupportedDevice.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 71B6638328D0CABC00635A15 /* UnsupportedDevice.storyboard */; };
-		ACEF94B12820AD2300776A9D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEF94B02820AD2300776A9D /* AppDelegate.swift */; };
-		ACEF94B32820AD2300776A9D /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEF94B22820AD2300776A9D /* SceneDelegate.swift */; };
-		ACEF94B52820AD2300776A9D /* RoomCaptureViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEF94B42820AD2300776A9D /* RoomCaptureViewController.swift */; };
-		ACEF94B82820AD2300776A9D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94B62820AD2300776A9D /* Main.storyboard */; };
-		ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94B92820AD2400776A9D /* Assets.xcassets */; };
-		ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */; };
-		ACEF94C62820AF6600776A9D /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEF94C52820AF6600776A9D /* OnboardingViewController.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000528D0000000000005 /* HomeViewController.swift */; };
-		A1B2C3D4E5F60718293A4B5D /* SavedScansViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000628D0000000000006 /* SavedScansViewController.swift */; };
+		211E71EE2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71ED2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift */; };
+		211E71F02F55A11800BB99FE /* UnsupportedDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71EF2F55A11800BB99FE /* UnsupportedDeviceView.swift */; };
+		211E71F22F55A16500BB99FE /* FloorPlanScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F12F55A16500BB99FE /* FloorPlanScreen.swift */; };
+		211E71F42F55A18900BB99FE /* SavedScansView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F32F55A18900BB99FE /* SavedScansView.swift */; };
+		211E71F62F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F52F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift */; };
+		211E71F82F55A1C000BB99FE /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F72F55A1C000BB99FE /* HomeView.swift */; };
+		211E71FA2F55A1F700BB99FE /* RoomyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F92F55A1F700BB99FE /* RoomyApp.swift */; };
 		A1B2C3D4E5F60718293A4B5E /* FloorPlanExportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000728D0000000000007 /* FloorPlanExportData.swift */; };
 		A1B2C3D4E5F60718293A4B5F /* SavedScansStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000828D0000000000008 /* SavedScansStore.swift */; };
+		ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94B92820AD2400776A9D /* Assets.xcassets */; };
+		ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */; };
 		FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000001 /* FloorPlanGenerator.swift */; };
 		FP00000228D0000000000002 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000002 /* FloorPlanView.swift */; };
-		FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000003 /* FloorPlanViewController.swift */; };
 		FP00000428D0000000000004 /* SVGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000004 /* SVGExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		05C7567A6B268FC70FFB0FCC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		211E71ED2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewControllerRepresentable.swift; sourceTree = "<group>"; };
+		211E71EF2F55A11800BB99FE /* UnsupportedDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsupportedDeviceView.swift; sourceTree = "<group>"; };
+		211E71F12F55A16500BB99FE /* FloorPlanScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanScreen.swift; sourceTree = "<group>"; };
+		211E71F32F55A18900BB99FE /* SavedScansView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScansView.swift; sourceTree = "<group>"; };
+		211E71F52F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomCaptureSwiftUIView.swift; sourceTree = "<group>"; };
+		211E71F72F55A1C000BB99FE /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		211E71F92F55A1F700BB99FE /* RoomyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomyApp.swift; sourceTree = "<group>"; };
 		35A95C3C90A8D7FA01AA694A /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		71B6638428D0CABC00635A15 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/UnsupportedDevice.storyboard; sourceTree = "<group>"; };
 		ACEF94AD2820AD2300776A9D /* RoomPlanExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoomPlanExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		ACEF94B02820AD2300776A9D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		ACEF94B22820AD2300776A9D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		ACEF94B42820AD2300776A9D /* RoomCaptureViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomCaptureViewController.swift; sourceTree = "<group>"; };
-		ACEF94B72820AD2300776A9D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		ACEF94B92820AD2400776A9D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACEF94BC2820AD2400776A9D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ACEF94BE2820AD2400776A9D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		ACEF94C52820AF6600776A9D /* OnboardingViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
-		FP00000528D0000000000005 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
-		FP00000628D0000000000006 /* SavedScansViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScansViewController.swift; sourceTree = "<group>"; };
-		FP00000728D0000000000007 /* FloorPlanExportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanExportData.swift; sourceTree = "<group>"; };
-		FP00000828D0000000000008 /* SavedScansStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScansStore.swift; sourceTree = "<group>"; };
 		CD4891E2C9F3F7012DE25B49 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		FP00000028D0000000000001 /* FloorPlanGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanGenerator.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000002 /* FloorPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanView.swift; sourceTree = "<group>"; };
-		FP00000028D0000000000003 /* FloorPlanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanViewController.swift; sourceTree = "<group>"; };
 		FP00000028D0000000000004 /* SVGExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGExporter.swift; sourceTree = "<group>"; };
+		FP00000728D0000000000007 /* FloorPlanExportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanExportData.swift; sourceTree = "<group>"; };
+		FP00000828D0000000000008 /* SavedScansStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScansStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,23 +86,21 @@
 		ACEF94AF2820AD2300776A9D /* RoomPlanExampleApp */ = {
 			isa = PBXGroup;
 			children = (
-				FP00000528D0000000000005 /* HomeViewController.swift */,
-				ACEF94B02820AD2300776A9D /* AppDelegate.swift */,
-				ACEF94B22820AD2300776A9D /* SceneDelegate.swift */,
-				ACEF94C52820AF6600776A9D /* OnboardingViewController.swift */,
-				ACEF94B42820AD2300776A9D /* RoomCaptureViewController.swift */,
 				FP00000028D0000000000001 /* FloorPlanGenerator.swift */,
 				FP00000728D0000000000007 /* FloorPlanExportData.swift */,
 				FP00000028D0000000000002 /* FloorPlanView.swift */,
-				FP00000028D0000000000003 /* FloorPlanViewController.swift */,
 				FP00000028D0000000000004 /* SVGExporter.swift */,
-				FP00000628D0000000000006 /* SavedScansViewController.swift */,
 				FP00000828D0000000000008 /* SavedScansStore.swift */,
-				ACEF94B62820AD2300776A9D /* Main.storyboard */,
-				71B6638328D0CABC00635A15 /* UnsupportedDevice.storyboard */,
 				ACEF94B92820AD2400776A9D /* Assets.xcassets */,
 				ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */,
 				ACEF94BE2820AD2400776A9D /* Info.plist */,
+				211E71ED2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift */,
+				211E71EF2F55A11800BB99FE /* UnsupportedDeviceView.swift */,
+				211E71F12F55A16500BB99FE /* FloorPlanScreen.swift */,
+				211E71F32F55A18900BB99FE /* SavedScansView.swift */,
+				211E71F52F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift */,
+				211E71F72F55A1C000BB99FE /* HomeView.swift */,
+				211E71F92F55A1F700BB99FE /* RoomyApp.swift */,
 			);
 			path = RoomPlanExampleApp;
 			sourceTree = "<group>";
@@ -179,10 +173,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				71B6638528D0CABC00635A15 /* UnsupportedDevice.storyboard in Resources */,
 				ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */,
 				ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */,
-				ACEF94B82820AD2300776A9D /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,40 +185,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ACEF94B52820AD2300776A9D /* RoomCaptureViewController.swift in Sources */,
-				ACEF94B12820AD2300776A9D /* AppDelegate.swift in Sources */,
-				ACEF94B32820AD2300776A9D /* SceneDelegate.swift in Sources */,
-				ACEF94C62820AF6600776A9D /* OnboardingViewController.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5C /* HomeViewController.swift in Sources */,
+				211E71FA2F55A1F700BB99FE /* RoomyApp.swift in Sources */,
+				211E71F02F55A11800BB99FE /* UnsupportedDeviceView.swift in Sources */,
+				211E71F42F55A18900BB99FE /* SavedScansView.swift in Sources */,
 				FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */,
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
-				FP00000328D0000000000003 /* FloorPlanViewController.swift in Sources */,
+				211E71F82F55A1C000BB99FE /* HomeView.swift in Sources */,
+				211E71F62F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift in Sources */,
 				FP00000428D0000000000004 /* SVGExporter.swift in Sources */,
+				211E71F22F55A16500BB99FE /* FloorPlanScreen.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5E /* FloorPlanExportData.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5F /* SavedScansStore.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5D /* SavedScansViewController.swift in Sources */,
+				211E71EE2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		71B6638328D0CABC00635A15 /* UnsupportedDevice.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				71B6638428D0CABC00635A15 /* Base */,
-			);
-			name = UnsupportedDevice.storyboard;
-			sourceTree = "<group>";
-		};
-		ACEF94B62820AD2300776A9D /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				ACEF94B72820AD2300776A9D /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -377,7 +353,6 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "RoomCaptureView Requires Camera Access";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
@@ -412,7 +387,6 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "RoomCaptureView Requires Camera Access";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;

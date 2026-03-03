@@ -8,7 +8,7 @@ Persists saved scans to disk and loads them for review.
 import Foundation
 import UIKit
 
-struct SavedScanRecord: Codable {
+struct SavedScanRecord: Codable, Identifiable {
     let id: String
     let createdAt: Date
     let title: String

@@ -13,23 +13,32 @@ import UIKit
 // MARK: - Floor Plan Color Scheme
 
 struct FloorPlanColors {
-    let background = Color(hex: "1A1A2E")
-    let floor = Color(hex: "16213E")
-    let wall = Color(hex: "E8E8E8")
-    let wallStroke = Color(hex: "111111")
-    let door = Color(hex: "2E8B57")       // SeaGreen matching Python
+    // Backgrounds — semantic, adapts to light/dark
+    let background = Color(uiColor: .systemBackground)
+    let floor = Color(uiColor: .secondarySystemBackground)
+
+    // Structural elements — minimalist, using system grays
+    let wall = Color(uiColor: .label)
+    let wallStroke = Color(uiColor: .label)
+    let outline = Color(uiColor: .separator)
+    let gridLine = Color(uiColor: .quaternarySystemFill)
+
+    // Doors & windows — punchy, identifiable colors
+    let door = Color(hex: "2E8B57")       // SeaGreen
     let doorSwing = Color(hex: "2E8B57").opacity(0.3)
-    let window = Color(hex: "00AEEF")     // Cyan matching Python
-    let furniture = Color(hex: "FF6B6B").opacity(0.25)
+    let window = Color(hex: "00AEEF")     // Cyan
+
+    // Furniture — warm accent
+    let furniture = Color(hex: "FF6B6B").opacity(0.2)
     let furnitureStroke = Color(hex: "FF6B6B")
     let furnitureLabel = Color(hex: "AA2E2E")
-    let dimension = Color(hex: "888888")
-    let dimensionText = Color(hex: "AAAAAA")
-    let gridLine = Color(hex: "2A2A4A")
-    let areaText = Color(hex: "2E8B57")   // SeaGreen matching Python
-    let sectionLabel = Color(hex: "666666")
-    let roomLabel = Color(hex: "333333")
-    let outline = Color(hex: "888888")
+
+    // Labels & dimensions — semantic secondary/tertiary
+    let dimension = Color(uiColor: .tertiaryLabel)
+    let dimensionText = Color(uiColor: .secondaryLabel)
+    let areaText = Color(hex: "2E8B57")   // SeaGreen — matches doors
+    let sectionLabel = Color(uiColor: .secondaryLabel)
+    let roomLabel = Color(uiColor: .label)
 }
 
 extension Color {
@@ -483,16 +492,23 @@ struct FloorPlanView: View {
     private var headerOverlay: some View {
         VStack(spacing: 12) {
             HStack {
-                CapsuleButton(title: retakeTitle) {
-                    onRetake()
+                if #available(iOS 26.0, *) {
+                    Button(retakeTitle) { onRetake() }
+                        .buttonStyle(.glass)
+                } else {
+                    Button(retakeTitle) { onRetake() }
+                        .buttonStyle(.bordered)
                 }
                 Spacer()
                 Text("Floor Plan")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.headline)
                 Spacer()
-                CapsuleButton(title: "Save") {
-                    onSave()
+                if #available(iOS 26.0, *) {
+                    Button("Save") { onSave() }
+                        .buttonStyle(.glass)
+                } else {
+                    Button("Save") { onSave() }
+                        .buttonStyle(.bordered)
                 }
             }
             .padding(.horizontal, 18)
@@ -501,24 +517,34 @@ struct FloorPlanView: View {
             AreaPill(area: floorPlanData.totalArea)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 12)
         .frame(maxHeight: .infinity, alignment: .top)
     }
     
     private var zoomControlsOverlay: some View {
         VStack(spacing: 10) {
-            ZoomButton(symbol: "plus") {
+            Button {
                 let newScale = min(scale * 1.2, 5.0)
                 withAnimation(.spring()) {
                     scale = newScale
                 }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 44)
             }
-            ZoomButton(symbol: "minus") {
+            .modifier(GlassCircleButtonModifier())
+
+            Button {
                 let newScale = max(scale / 1.2, 0.5)
                 withAnimation(.spring()) {
                     scale = newScale
                 }
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 44)
             }
+            .modifier(GlassCircleButtonModifier())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .padding(.trailing, 16)
@@ -530,7 +556,7 @@ struct FloorPlanView: View {
             Text("VIEW OPTIONS")
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(1.2)
-                .foregroundColor(Color.white.opacity(0.7))
+                .foregroundStyle(.secondary)
             
             HStack(spacing: 16) {
                 OptionToggleButton(
@@ -551,26 +577,31 @@ struct FloorPlanView: View {
                 )
             }
             
-            Button {
-                onExport()
-            } label: {
-                Label("Export floor plan", systemImage: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color(hex: "6D7BFF"))
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
+            if #available(iOS 26.0, *) {
+                Button {
+                    onExport()
+                } label: {
+                    Label("Export floor plan", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glassProminent)
+                .controlSize(.large)
+            } else {
+                Button {
+                    onExport()
+                } label: {
+                    Label("Export floor plan", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.25), radius: 24, x: 0, y: 12)
+        .modifier(GlassDockModifier())
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .padding(.horizontal, 16)
         .padding(.bottom, 20)
@@ -578,30 +609,6 @@ struct FloorPlanView: View {
 }
 
 // MARK: - Controls
-
-private struct CapsuleButton: View {
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-            Button(action: action) {
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.08))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                )
-        }
-            .buttonStyle(.plain)
-    }
-}
 
 private struct AreaPill: View {
     let area: CGFloat
@@ -612,20 +619,10 @@ private struct AreaPill: View {
                 .font(.system(size: 13, weight: .semibold))
             Text(formatArea(area))
                 .font(.system(size: 16, weight: .semibold))
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
         }
-        .foregroundColor(.white)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(Color.white.opacity(0.15))
-        )
-        .overlay(
-            Capsule()
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .modifier(GlassPillModifier())
     }
 
     private func formatArea(_ value: CGFloat) -> String {
@@ -638,36 +635,10 @@ private struct AreaPill: View {
     }
 }
 
-private struct ZoomButton: View {
-    let symbol: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .background(
-                    Circle()
-                        .fill(Color.white.opacity(0.12))
-                )
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct OptionToggleButton: View {
     let systemImage: String?
     let text: String?
     @Binding var isOn: Bool
-
-    @State private var isPressed = false
-    private let feedback = UIImpactFeedbackGenerator(style: .light)
 
     init(systemImage: String, isOn: Binding<Bool>) {
         self.systemImage = systemImage
@@ -682,50 +653,76 @@ private struct OptionToggleButton: View {
     }
 
     var body: some View {
-        let gradient = LinearGradient(
-            colors: [Color(hex: "5B5CFF"), Color(hex: "7A5CFF")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        let background = isOn ? AnyShapeStyle(gradient) : AnyShapeStyle(Color.white.opacity(0.1))
-        let foreground = isOn ? Color.white : Color.white.opacity(0.6)
-
-        return ZStack {
-            Circle()
-                .fill(background)
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-
-            if let systemImage = systemImage {
-                Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(foreground)
-            } else if let text = text {
-                Text(text)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(foreground)
+        Button {
+            isOn.toggle()
+        } label: {
+            Group {
+                if let systemImage = systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 18, weight: .semibold))
+                } else if let text = text {
+                    Text(text)
+                        .font(.system(size: 16, weight: .semibold))
+                }
             }
+            .foregroundStyle(isOn ? .primary : .secondary)
+            .frame(width: 48, height: 48)
         }
-        .scaleEffect(isPressed ? 0.9 : 1.0)
-        .animation(.interpolatingSpring(stiffness: 260, damping: 16), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPressed {
-                        isPressed = true
-                        feedback.prepare()
-                        feedback.impactOccurred()
-                    }
-                }
-                .onEnded { _ in
-                    isPressed = false
-                    isOn.toggle()
-                }
-        )
+        .modifier(GlassToggleButtonModifier(isOn: isOn))
+    }
+}
+
+// MARK: - Availability Modifiers
+
+private struct GlassCircleButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .buttonStyle(.glass)
+        } else {
+            content
+                .buttonStyle(.bordered)
+                .clipShape(Circle())
+        }
+    }
+}
+
+private struct GlassPillModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect()
+        } else {
+            content
+                .background(.regularMaterial, in: Capsule())
+        }
+    }
+}
+
+private struct GlassDockModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect(in: .rect(cornerRadius: 28))
+        } else {
+            content
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
+        }
+    }
+}
+
+private struct GlassToggleButtonModifier: ViewModifier {
+    let isOn: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .buttonStyle(.glass(isOn ? .regular.tint(.accentColor) : .regular))
+        } else {
+            content
+                .buttonStyle(.bordered)
+                .tint(isOn ? .accentColor : .secondary)
+        }
     }
 }
 

@@ -11,7 +11,7 @@ struct UnsupportedDeviceView: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "lidar.iphone")
-                .font(.system(size: 48))
+                .font(.largeTitle)
                 .foregroundStyle(.secondary)
             Text("Unsupported Device")
                 .font(.title.bold())

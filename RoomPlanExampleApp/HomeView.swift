@@ -17,10 +17,10 @@ struct HomeView: View {
             Spacer()
 
             Text("Roomy")
-                .font(.system(size: 34, weight: .bold))
+                .font(.title.bold())
 
             Text("Create a floor plan by scanning your room, then save and review scans later.")
-                .font(.body)
+                .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
                 .padding(.top, 12)
@@ -28,21 +28,37 @@ struct HomeView: View {
             Spacer()
 
             VStack(spacing: 14) {
-                Button("Start Scanning") {
-                    showScanner = true
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .buttonBorderShape(.capsule)
-                .frame(minWidth: 200)
+                if #available(iOS 26.0, *) {
+                    Button("Start Scanning") {
+                        showScanner = true
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .frame(minWidth: 200)
 
-                Button("Saved Scans") {
-                    showSavedScans = true
+                    Button("Saved Scans") {
+                        showSavedScans = true
+                    }
+                    .buttonStyle(.glass)
+                    .controlSize(.large)
+                    .frame(minWidth: 200)
+                } else {
+                    Button("Start Scanning") {
+                        showScanner = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .buttonBorderShape(.capsule)
+                    .frame(minWidth: 200)
+
+                    Button("Saved Scans") {
+                        showSavedScans = true
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .buttonBorderShape(.capsule)
+                    .frame(minWidth: 200)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .buttonBorderShape(.capsule)
-                .frame(minWidth: 200)
             }
             .padding(.bottom, 33)
         }

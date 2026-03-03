@@ -11,6 +11,67 @@ import RoomPlan
 
 // MARK: - UIViewRepresentable wrapper for RoomCaptureView
 
+@objc(RoomCaptureCoordinator)
+class RoomCaptureCoordinator: NSObject, RoomCaptureViewDelegate, RoomCaptureSessionDelegate, NSCoding {
+    var captureView: RoomCaptureView?
+    var sessionRunning = false
+    private let configuration = RoomCaptureSession.Configuration()
+    private let onCaptureComplete: (CapturedRoom) -> Void
+    private let onError: (String) -> Void
+
+    init(onCaptureComplete: @escaping (CapturedRoom) -> Void,
+         onError: @escaping (String) -> Void) {
+        self.onCaptureComplete = onCaptureComplete
+        self.onError = onError
+    }
+
+    // NSCoding conformance required by RoomCaptureViewDelegate
+    func encode(with coder: NSCoder) {}
+
+    required init?(coder: NSCoder) {
+        self.onCaptureComplete = { _ in }
+        self.onError = { _ in }
+    }
+
+    func startSession() {
+        guard !sessionRunning else { return }
+        sessionRunning = true
+        captureView?.captureSession.run(configuration: configuration)
+    }
+
+    func stopSession() {
+        guard sessionRunning else { return }
+        sessionRunning = false
+        captureView?.captureSession.stop()
+    }
+
+    // MARK: - RoomCaptureViewDelegate
+
+    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
+        if let error = error {
+            onError(error.localizedDescription)
+            return false
+        }
+        return true
+    }
+
+    func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
+        if let error = error {
+            onError(error.localizedDescription)
+            return
+        }
+        onCaptureComplete(processedResult)
+    }
+
+    // MARK: - RoomCaptureSessionDelegate
+
+    func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: Error?) {
+        if let error = error {
+            onError(error.localizedDescription)
+        }
+    }
+}
+
 struct RoomCaptureViewRepresentable: UIViewRepresentable {
     @Binding var isScanning: Bool
     let onCaptureComplete: (CapturedRoom) -> Void
@@ -33,60 +94,8 @@ struct RoomCaptureViewRepresentable: UIViewRepresentable {
         }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onCaptureComplete: onCaptureComplete, onError: onError)
-    }
-
-    class Coordinator: NSObject, RoomCaptureViewDelegate, RoomCaptureSessionDelegate {
-        var captureView: RoomCaptureView?
-        var sessionRunning = false
-        private let configuration = RoomCaptureSession.Configuration()
-        private let onCaptureComplete: (CapturedRoom) -> Void
-        private let onError: (String) -> Void
-
-        init(onCaptureComplete: @escaping (CapturedRoom) -> Void,
-             onError: @escaping (String) -> Void) {
-            self.onCaptureComplete = onCaptureComplete
-            self.onError = onError
-        }
-
-        func startSession() {
-            guard !sessionRunning else { return }
-            sessionRunning = true
-            captureView?.captureSession.run(configuration: configuration)
-        }
-
-        func stopSession() {
-            guard sessionRunning else { return }
-            sessionRunning = false
-            captureView?.captureSession.stop()
-        }
-
-        // MARK: - RoomCaptureViewDelegate
-
-        func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
-            if let error = error {
-                onError(error.localizedDescription)
-                return false
-            }
-            return true
-        }
-
-        func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
-            if let error = error {
-                onError(error.localizedDescription)
-                return
-            }
-            onCaptureComplete(processedResult)
-        }
-
-        // MARK: - RoomCaptureSessionDelegate
-
-        func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: Error?) {
-            if let error = error {
-                onError(error.localizedDescription)
-            }
-        }
+    func makeCoordinator() -> RoomCaptureCoordinator {
+        RoomCaptureCoordinator(onCaptureComplete: onCaptureComplete, onError: onError)
     }
 }
 
@@ -123,25 +132,9 @@ struct RoomCaptureSwiftUIView: View {
             // Overlaid controls
             VStack {
                 // Top navigation bar
-                HStack {
-                    Button(isScanning ? "Cancel" : "Cancel") {
-                        dismiss()
-                    }
-                    .foregroundStyle(.white)
-
-                    Spacer()
-
-                    if isScanning {
-                        Button("Done") {
-                            isScanning = false
-                            isProcessing = true
-                        }
-                        .foregroundStyle(.white)
-                    }
-                }
-                .font(.system(size: 17, weight: .semibold))
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                topNavigationBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
 
                 Spacer()
 
@@ -155,32 +148,10 @@ struct RoomCaptureSwiftUIView: View {
 
                 // Bottom buttons (visible after scanning stops)
                 if !isScanning && !isProcessing {
-                    HStack(spacing: 16) {
-                        if finalResults != nil {
-                            Button {
-                                exportUSDZ()
-                            } label: {
-                                Label("Export", systemImage: "square.and.arrow.up")
-                                    .font(.headline)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .buttonBorderShape(.capsule)
-
-                            Button {
-                                showFloorPlan = true
-                            } label: {
-                                Label("Floor Plan", systemImage: "square.split.bottomrightquarter")
-                                    .font(.headline)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(Color(red: 0.31, green: 0.80, blue: 0.64))
-                            .foregroundStyle(.black)
-                            .buttonBorderShape(.capsule)
-                        }
-                    }
-                    .padding(.bottom, 40)
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 1.0), value: isScanning)
+                    bottomButtons
+                        .padding(.bottom, 40)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 1.0), value: isScanning)
                 }
             }
         }
@@ -188,7 +159,6 @@ struct RoomCaptureSwiftUIView: View {
             if let room = finalResults {
                 FloorPlanScreen(capturedRoom: room, onRetake: {
                     showFloorPlan = false
-                    resetScanState()
                 })
             }
         }
@@ -200,6 +170,132 @@ struct RoomCaptureSwiftUIView: View {
         } message: {
             Text(errorMessage ?? "An unknown error occurred.")
         }
+    }
+
+    // MARK: - Subviews
+
+    @ViewBuilder
+    private var topNavigationBar: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer {
+                topNavigationContent
+            }
+        } else {
+            topNavigationContent
+        }
+    }
+
+    @ViewBuilder
+    private var topNavigationContent: some View {
+        if !isScanning && !isProcessing && finalResults != nil {
+            // Results shown: Retake | 3D View | Cancel
+            resultsNavigationBar
+        } else {
+            // Scanning / Processing: Cancel | Done
+            scanningNavigationBar
+        }
+    }
+
+    private var scanningNavigationBar: some View {
+        HStack {
+            if #available(iOS 26.0, *) {
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.glass)
+            } else {
+                Button("Cancel") { dismiss() }
+                    .foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .semibold))
+            }
+
+            Spacer()
+
+            if isScanning {
+                if #available(iOS 26.0, *) {
+                    Button("Done") {
+                        isScanning = false
+                        isProcessing = true
+                    }
+                    .buttonStyle(.glass)
+                } else {
+                    Button("Done") {
+                        isScanning = false
+                        isProcessing = true
+                    }
+                    .foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .semibold))
+                }
+            }
+        }
+    }
+
+    private var resultsNavigationBar: some View {
+        HStack {
+            if #available(iOS 26.0, *) {
+                Button("Retake") { resetScanState() }
+                    .buttonStyle(.glass)
+            } else {
+                Button("Retake") { resetScanState() }
+                    .foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .semibold))
+            }
+
+            Spacer()
+
+            Text("3D View")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Spacer()
+
+            if #available(iOS 26.0, *) {
+                Button("2D View") { showFloorPlan = true }
+                    .buttonStyle(.glass)
+            } else {
+                Button("2D View") { showFloorPlan = true }
+                    .foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .semibold))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var bottomButtons: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer {
+                bottomButtonsContent
+            }
+        } else {
+            bottomButtonsContent
+        }
+    }
+
+    private var bottomButtonsContent: some View {
+        VStack {
+            if finalResults != nil {
+                if #available(iOS 26.0, *) {
+                    Button {
+                        exportUSDZ()
+                    } label: {
+                        Label("Export 3D", systemImage: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                } else {
+                    Button {
+                        exportUSDZ()
+                    } label: {
+                        Label("Export 3D", systemImage: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Actions
