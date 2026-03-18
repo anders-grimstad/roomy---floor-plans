@@ -13,6 +13,25 @@ struct HomeView: View {
     @State private var showSavedScans = false
     @State private var scanBounce = 0
     @State private var archiveBounce = 0
+    @State private var showPhotoCredit = false
+
+    // Asset name → original filename (without extension)
+    private static let backgroundImageFiles: [(asset: String, filename: String)] = [
+        ("HomeBackground", "george-barros-t4FMbSdmeR0-unsplash"),
+        ("HomeBackground2", "peter-jan-rijpkema-pnEtsdgBeBE-unsplash"),
+        ("HomeBackground3", "alexander-andrews-A3DPhhAL6Zg-unsplash"),
+        ("HomeBackground4", "john-joumaa-yoihgoqV41w-unsplash"),
+    ]
+    private static let selected = backgroundImageFiles.randomElement()!
+    private let backgroundImage = selected.asset
+
+    /// Derives photographer name from the filename pattern: name-surname-hash-unsplash
+    private var photoCredit: String {
+        let parts = Self.selected.filename.split(separator: "-").map(String.init)
+        // Drop last two components (hash and "unsplash")
+        let nameParts = parts.dropLast(2)
+        return nameParts.map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+    }
 
     var body: some View {
         if #available(iOS 26.0, *) {
@@ -94,7 +113,7 @@ struct HomeView: View {
     @available(iOS 26.0, *)
     private var homeContent_iOS26: some View {
         ZStack {
-            Image("HomeBackground")
+            Image(backgroundImage)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .overlay(Color.black.opacity(0.4))
@@ -106,8 +125,6 @@ struct HomeView: View {
                 // Glass information card
                 informationCard
                     .glassEffect(.clear.tint(Color.black.opacity(0.6)), in: .rect(cornerRadius: 24))
-
-                Spacer()
 
                 // Action buttons
                 GlassEffectContainer(spacing: 12) {
@@ -139,20 +156,24 @@ struct HomeView: View {
                     .frame(maxWidth: 362)
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.bottom, 230)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                photoCreditButton
+            }
+            .onAppear {
+                scanBounce += 1
+                archiveBounce += 1
             }
         }
-        .onAppear {
-            scanBounce += 1
-            archiveBounce += 1
-        }
+
     }
 
     // MARK: - Legacy (pre-iOS 26)
 
     private var homeContentLegacy: some View {
         ZStack {
-            Image("HomeBackground")
+            Image(backgroundImage)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .overlay(Color.black.opacity(0.4))
@@ -201,10 +222,41 @@ struct HomeView: View {
                 .padding(.bottom, 20)
             }
         }
+        .overlay(alignment: .bottomTrailing) {
+            photoCreditButton
+        }
         .onAppear {
             scanBounce += 1
             archiveBounce += 1
         }
+    }
+
+    // MARK: - Photo Credit
+
+    private var photoCreditButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showPhotoCredit.toggle()
+            }
+        } label: {
+            Image(systemName: "info.circle.fill")
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.5))
+        }
+        .overlay(alignment: .topTrailing) {
+            if showPhotoCredit {
+                Text("\(photoCredit) @ unsplash.com")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.6), in: .capsule)
+                    .fixedSize()
+                    .offset(x: -28, y: -8)
+                    .transition(.opacity)
+            }
+        }
+        .padding(12)
     }
 }
 
