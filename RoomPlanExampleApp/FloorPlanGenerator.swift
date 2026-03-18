@@ -297,6 +297,223 @@ struct FloorPlanData {
     )
 }
 
+extension FloorPlanPoint {
+    func rotated(by angle: CGFloat) -> FloorPlanPoint {
+        let cosAngle = cos(angle)
+        let sinAngle = sin(angle)
+        let rotatedX = x * cosAngle - y * sinAngle
+        let rotatedY = x * sinAngle + y * cosAngle
+        return FloorPlanPoint(rotatedX, rotatedY)
+    }
+}
+
+extension FloorPlanData {
+    func oriented(northAlignment: ScanNorthAlignment?, sourceIsNorthUpNormalized: Bool, desiredNorthUp: Bool) -> FloorPlanData {
+        guard let northAlignment else { return self }
+        guard sourceIsNorthUpNormalized != desiredNorthUp else { return self }
+
+        let compassDeltaDegrees = desiredNorthUp
+            ? northAlignment.normalizedRoomToNorthYawDegrees
+            : -northAlignment.normalizedRoomToNorthYawDegrees
+        let mathRotationDegrees = compassDeltaToMathRotationDegrees(compassDeltaDegrees)
+        let radians = CGFloat(mathRotationDegrees) * .pi / 180
+        return rotated(by: radians)
+    }
+
+    // Compass deltas increase clockwise, while our 2D math rotation is counterclockwise.
+    // Negating the heading delta keeps north-up orientation correct in rendered coordinates.
+    private func compassDeltaToMathRotationDegrees(_ degrees: Double) -> Double {
+        -degrees
+    }
+
+    func rotated(by angle: CGFloat) -> FloorPlanData {
+        guard abs(angle) > 0.0001 else { return self }
+
+        let rotatedOutlines = floorOutlines.map { outline in
+            FloorPlanOutline(
+                id: outline.id,
+                outline: outline.outline.map { $0.rotated(by: angle) },
+                story: outline.story,
+                area: outline.area
+            )
+        }
+
+        let rotatedWalls = walls.map { wall in
+            FloorPlanWall(
+                id: wall.id,
+                start: wall.start.rotated(by: angle),
+                end: wall.end.rotated(by: angle),
+                thickness: wall.thickness,
+                length: wall.length
+            )
+        }
+
+        let rotatedDoors = doors.map { door in
+            FloorPlanDoor(
+                id: door.id,
+                start: door.start.rotated(by: angle),
+                end: door.end.rotated(by: angle),
+                width: door.width,
+                angle: door.angle + angle,
+                isOpen: door.isOpen,
+                parentWallId: door.parentWallId
+            )
+        }
+
+        let rotatedWindows = windows.map { window in
+            FloorPlanWindow(
+                id: window.id,
+                start: window.start.rotated(by: angle),
+                end: window.end.rotated(by: angle),
+                width: window.width,
+                angle: window.angle + angle,
+                parentWallId: window.parentWallId
+            )
+        }
+
+        let rotatedObjects = objects.map { object in
+            FloorPlanObject(
+                id: object.id,
+                position: object.position.rotated(by: angle),
+                width: object.width,
+                depth: object.depth,
+                angle: object.angle + angle,
+                category: object.category,
+                label: object.label
+            )
+        }
+
+        let rotatedSections = sections.map { section in
+            FloorPlanSection(
+                center: section.center.rotated(by: angle),
+                label: section.label,
+                story: section.story
+            )
+        }
+
+        let bounds = Self.calculateBounds(
+            outlines: rotatedOutlines,
+            walls: rotatedWalls,
+            doors: rotatedDoors,
+            windows: rotatedWindows,
+            objects: rotatedObjects
+        )
+        let dimensions = Self.generateDimensions(outlines: rotatedOutlines, bounds: bounds)
+
+        return FloorPlanData(
+            floorOutlines: rotatedOutlines,
+            walls: rotatedWalls,
+            doors: rotatedDoors,
+            windows: rotatedWindows,
+            objects: rotatedObjects,
+            sections: rotatedSections,
+            dimensions: dimensions,
+            bounds: bounds,
+            totalArea: totalArea
+        )
+    }
+
+    private static func calculateBounds(
+        outlines: [FloorPlanOutline],
+        walls: [FloorPlanWall],
+        doors: [FloorPlanDoor],
+        windows: [FloorPlanWindow],
+        objects: [FloorPlanObject]
+    ) -> CGRect {
+        var allPoints: [FloorPlanPoint] = []
+
+        for outline in outlines {
+            allPoints.append(contentsOf: outline.outline)
+        }
+
+        for wall in walls {
+            allPoints.append(wall.start)
+            allPoints.append(wall.end)
+        }
+
+        for door in doors {
+            allPoints.append(door.start)
+            allPoints.append(door.end)
+        }
+
+        for window in windows {
+            allPoints.append(window.start)
+            allPoints.append(window.end)
+        }
+
+        for object in objects {
+            allPoints.append(object.position)
+        }
+
+        guard !allPoints.isEmpty else { return .zero }
+
+        let xs = allPoints.map { $0.x }
+        let ys = allPoints.map { $0.y }
+
+        let minX = xs.min()! - 0.5
+        let maxX = xs.max()! + 0.5
+        let minY = ys.min()! - 0.5
+        let maxY = ys.max()! + 0.5
+
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    private static func generateDimensions(outlines: [FloorPlanOutline], bounds: CGRect) -> [FloorPlanDimension] {
+        var dimensions: [FloorPlanDimension] = []
+
+        guard let firstOutline = outlines.first else { return dimensions }
+        let outline = firstOutline.outline
+        guard !outline.isEmpty else { return dimensions }
+
+        let xs = outline.map { $0.x }
+        let ys = outline.map { $0.y }
+        let actualMinX = xs.min()!
+        let actualMaxX = xs.max()!
+        let actualMinY = ys.min()!
+        let actualMaxY = ys.max()!
+        let actualWidth = actualMaxX - actualMinX
+        let actualHeight = actualMaxY - actualMinY
+
+        let dimOffset: CGFloat = 0.4
+
+        let widthDim = FloorPlanDimension(
+            start: FloorPlanPoint(actualMinX, actualMaxY + dimOffset),
+            end: FloorPlanPoint(actualMaxX, actualMaxY + dimOffset),
+            label: String(format: "%.2f m", actualWidth),
+            offset: 0.3
+        )
+        dimensions.append(widthDim)
+
+        let heightDim = FloorPlanDimension(
+            start: FloorPlanPoint(actualMinX - dimOffset, actualMinY),
+            end: FloorPlanPoint(actualMinX - dimOffset, actualMaxY),
+            label: String(format: "%.2f m", actualHeight),
+            offset: 0.3
+        )
+        dimensions.append(heightDim)
+
+        for i in 0..<outline.count {
+            let start = outline[i]
+            let end = outline[(i + 1) % outline.count]
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let length = sqrt(dx * dx + dy * dy)
+
+            if length > 0.5 {
+                let wallDim = FloorPlanDimension(
+                    start: start,
+                    end: end,
+                    label: String(format: "%.2f m", length),
+                    offset: 0.25
+                )
+                dimensions.append(wallDim)
+            }
+        }
+
+        return dimensions
+    }
+}
+
 // MARK: - Floor Plan Generator
 
 class FloorPlanGenerator {

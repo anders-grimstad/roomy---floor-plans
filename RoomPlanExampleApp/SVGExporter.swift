@@ -43,7 +43,7 @@ class SVGExporter {
     }
     
     /// Export floor plan data to SVG string
-    func export(_ data: FloorPlanData) -> String {
+    func export(_ data: FloorPlanData, scanHeading: ScanHeading? = nil) -> String {
         let bounds = data.bounds
         guard bounds.width > 0 && bounds.height > 0 else {
             return createEmptySVG()
@@ -62,6 +62,22 @@ class SVGExporter {
         
         // Background
         elements.append(svgRect(x: 0, y: 0, width: viewWidth, height: viewHeight, fill: config.backgroundColor))
+
+        if let scanHeading {
+            elements.append("<!-- Heading -->")
+            let label = scanHeading.exportLabel
+            let headingX = margin
+            let headingY = margin * 0.6
+            elements.append(svgTextAnchored(
+                x: headingX,
+                y: headingY,
+                text: label,
+                fontSize: 12,
+                fill: config.labelColor,
+                anchor: "start",
+                baseline: "hanging"
+            ))
+        }
         
         // Floor outlines (thin strokes)
         elements.append("<!-- Floor Outlines -->")
@@ -209,8 +225,8 @@ class SVGExporter {
     }
     
     /// Export to file at given URL
-    func exportToFile(_ data: FloorPlanData, url: URL) throws {
-        let svgString = export(data)
+    func exportToFile(_ data: FloorPlanData, scanHeading: ScanHeading? = nil, url: URL) throws {
+        let svgString = export(data, scanHeading: scanHeading)
         try svgString.write(to: url, atomically: true, encoding: .utf8)
     }
     

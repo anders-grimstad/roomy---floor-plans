@@ -8,8 +8,11 @@ Codable export format for floor plans and conversion helpers.
 import Foundation
 
 struct FloorPlanExportData: Codable {
-    var version: String = "2.0"
+    var version: String = "2.3"
     let generatedAt: Date
+    let scanHeading: ScanHeading?
+    let northAlignment: ScanNorthAlignment?
+    let isNorthUpNormalized: Bool?
     let totalArea: Double
     let bounds: BoundsData
     let floorOutlines: [FloorOutlineData]
@@ -81,8 +84,16 @@ struct FloorPlanExportData: Codable {
         let story: Int?
     }
 
-    init(from data: FloorPlanData) {
+    init(
+        from data: FloorPlanData,
+        scanHeading: ScanHeading? = nil,
+        northAlignment: ScanNorthAlignment? = nil,
+        isNorthUpNormalized: Bool? = nil
+    ) {
         self.generatedAt = Date()
+        self.scanHeading = scanHeading
+        self.northAlignment = northAlignment
+        self.isNorthUpNormalized = isNorthUpNormalized
         self.totalArea = Double(data.totalArea)
         self.bounds = BoundsData(
             x: Double(data.bounds.minX),

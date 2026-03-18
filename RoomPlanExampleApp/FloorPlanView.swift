@@ -71,9 +71,15 @@ extension Color {
 
 struct FloorPlanView: View {
     let floorPlanData: FloorPlanData
+    let scanHeading: ScanHeading?
+    let yawDegrees: Double?
+    let isNorthUpEnabled: Bool
+    let canToggleNorthUp: Bool
+    let northUpStatusMessage: String?
     let retakeTitle: String
     let onRetake: () -> Void
     let onSave: () -> Void
+    let onToggleNorthUp: () -> Void
     let onExport: () -> Void
     let colors = FloorPlanColors()
     
@@ -86,7 +92,6 @@ struct FloorPlanView: View {
     @State private var showFurniture: Bool = true
     @State private var showGrid: Bool = false
     @State private var showLabels: Bool = true
-    @State private var show3D: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -491,35 +496,51 @@ struct FloorPlanView: View {
     
     private var headerOverlay: some View {
         VStack(spacing: 12) {
-            HStack {
-                if #available(iOS 26.0, *) {
-                    Button(retakeTitle) { onRetake() }
-                        .buttonStyle(.glass)
-                } else {
-                    Button(retakeTitle) { onRetake() }
-                        .buttonStyle(.bordered)
-                }
-                Spacer()
+            ZStack {
                 Text("Floor Plan")
                     .font(.headline)
-                Spacer()
-                if #available(iOS 26.0, *) {
-                    Button("Save") { onSave() }
-                        .buttonStyle(.glass)
-                } else {
-                    Button("Save") { onSave() }
-                        .buttonStyle(.bordered)
+
+                HStack {
+                    backButton
+                    Spacer()
+                    saveButton
                 }
             }
             .padding(.horizontal, 18)
             .padding(.top, 10)
-            
+
             AreaPill(area: floorPlanData.totalArea)
+
+            if let scanHeading {
+                HeadingPill(heading: scanHeading, yawDegrees: yawDegrees)
+            }
         }
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
     }
-    
+
+    @ViewBuilder
+    private var backButton: some View {
+        if #available(iOS 26.0, *) {
+            Button(retakeTitle) { onRetake() }
+                .buttonStyle(.glass)
+        } else {
+            Button(retakeTitle) { onRetake() }
+                .buttonStyle(.bordered)
+        }
+    }
+
+    @ViewBuilder
+    private var saveButton: some View {
+        if #available(iOS 26.0, *) {
+            Button("Save") { onSave() }
+                .buttonStyle(.glass)
+        } else {
+            Button("Save") { onSave() }
+                .buttonStyle(.bordered)
+        }
+    }
+
     private var zoomControlsOverlay: some View {
         VStack(spacing: 10) {
             Button {
@@ -571,10 +592,18 @@ struct FloorPlanView: View {
                     systemImage: "ruler",
                     isOn: $showDimensions
                 )
-                OptionToggleButton(
-                    systemImage: "cube.transparent",
-                    isOn: $show3D
+                NorthUpOptionButton(
+                    isOn: isNorthUpEnabled,
+                    isEnabled: canToggleNorthUp,
+                    action: onToggleNorthUp
                 )
+            }
+
+            if let northUpStatusMessage {
+                Text(northUpStatusMessage)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(canToggleNorthUp ? Color.secondary : Color.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             
             if #available(iOS 26.0, *) {
@@ -672,6 +701,24 @@ private struct OptionToggleButton: View {
     }
 }
 
+private struct NorthUpOptionButton: View {
+    let isOn: Bool
+    let isEnabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: isOn ? "location.north.circle.fill" : "location.north.circle")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(isOn ? .primary : .secondary)
+                .frame(width: 48, height: 48)
+        }
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.45)
+        .modifier(GlassToggleButtonModifier(isOn: isOn))
+    }
+}
+
 // MARK: - Availability Modifiers
 
 private struct GlassCircleButtonModifier: ViewModifier {
@@ -684,6 +731,40 @@ private struct GlassCircleButtonModifier: ViewModifier {
                 .buttonStyle(.bordered)
                 .clipShape(Circle())
         }
+    }
+}
+
+private struct HeadingPill: View {
+    let heading: ScanHeading
+    let yawDegrees: Double?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "location.north.circle")
+                .font(.system(size: 14, weight: .semibold))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(heading.summaryLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(heading.detailLabel)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                Text(yawLabel)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(Color(uiColor: .secondarySystemBackground))
+        )
+    }
+
+    private var yawLabel: String {
+        guard let yawDegrees else { return "Yaw unavailable" }
+        return "Yaw \(Int(yawDegrees.rounded()))°"
     }
 }
 
@@ -786,11 +867,25 @@ struct FloorPlanView_Previews: PreviewProvider {
             totalArea: 20
         )
         
+        let sampleHeading = ScanHeading(
+            headingDegrees: 182,
+            accuracyDegrees: 8,
+            reference: .trueNorth,
+            capturedAt: Date(),
+            captureMethod: "preview"
+        )
+
         FloorPlanView(
             floorPlanData: sampleData,
+            scanHeading: sampleHeading,
+            yawDegrees: 140,
+            isNorthUpEnabled: true,
+            canToggleNorthUp: true,
+            northUpStatusMessage: "North lock • High confidence",
             retakeTitle: "Retake",
             onRetake: {},
             onSave: {},
+            onToggleNorthUp: {},
             onExport: {}
         )
     }

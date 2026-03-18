@@ -14,9 +14,14 @@ struct FloorPlanScreen: View {
 
     let capturedRoom: CapturedRoom?
     let exportData: FloorPlanExportData?
+    let scanHeading: ScanHeading?
+    let northAlignment: ScanNorthAlignment?
+    let sourceIsNorthUpNormalized: Bool
     let onRetake: (() -> Void)?
 
+    @State private var baseFloorPlanData: FloorPlanData = .empty
     @State private var floorPlanData: FloorPlanData = .empty
+    @State private var isNorthUpEnabled: Bool
     @State private var showExportFormatPicker = false
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
@@ -24,28 +29,52 @@ struct FloorPlanScreen: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
 
-    init(capturedRoom: CapturedRoom, onRetake: (() -> Void)? = nil) {
+    init(
+        capturedRoom: CapturedRoom,
+        scanHeading: ScanHeading? = nil,
+        northAlignment: ScanNorthAlignment? = nil,
+        onRetake: (() -> Void)? = nil
+    ) {
         self.capturedRoom = capturedRoom
         self.exportData = nil
+        self.scanHeading = scanHeading
+        self.northAlignment = northAlignment
+        self.sourceIsNorthUpNormalized = false
         self.onRetake = onRetake
+        self._isNorthUpEnabled = State(initialValue: northAlignment?.isReliable ?? false)
     }
 
     init(exportData: FloorPlanExportData) {
         self.capturedRoom = nil
         self.exportData = exportData
+        self.scanHeading = exportData.scanHeading
+        self.northAlignment = exportData.northAlignment
+        self.sourceIsNorthUpNormalized = exportData.isNorthUpNormalized ?? false
         self.onRetake = nil
+        let alignmentIsUsable = exportData.northAlignment?.isReliable == true
+        let initialNorthUp = alignmentIsUsable ? (exportData.isNorthUpNormalized ?? true) : false
+        self._isNorthUpEnabled = State(initialValue: initialNorthUp)
     }
 
     var body: some View {
         FloorPlanView(
             floorPlanData: floorPlanData,
+            scanHeading: scanHeading,
+            yawDegrees: displayYawDegrees,
+            isNorthUpEnabled: isNorthUpEnabled,
+            canToggleNorthUp: isNorthUpAvailable,
+            northUpStatusMessage: northUpStatusMessage,
             retakeTitle: "Back",
             onRetake: handleRetake,
             onSave: saveScan,
+            onToggleNorthUp: toggleNorthUp,
             onExport: { showExportFormatPicker = true }
         )
         .statusBarHidden(false)
         .onAppear { generateFloorPlan() }
+        .onChange(of: isNorthUpEnabled, initial: false) {
+            applyFloorPlanOrientation()
+        }
         .confirmationDialog("Export Floor Plan", isPresented: $showExportFormatPicker, titleVisibility: .visible) {
             Button("SVG Image") { exportAsSVG() }
             Button("PNG Image") { exportAsImage() }
@@ -66,13 +95,18 @@ struct FloorPlanScreen: View {
 
     private func generateFloorPlan() {
         if let exportData = exportData {
-            floorPlanData = exportData.toFloorPlanData()
+            baseFloorPlanData = exportData.toFloorPlanData()
         } else if let capturedRoom = capturedRoom {
             let generator = FloorPlanGenerator(capturedRoom: capturedRoom)
-            floorPlanData = generator.generate()
+            baseFloorPlanData = generator.generate()
         } else {
+            baseFloorPlanData = .empty
+            floorPlanData = .empty
             showError("No room data available")
+            return
         }
+
+        applyFloorPlanOrientation()
     }
 
     // MARK: - Navigation
@@ -90,7 +124,12 @@ struct FloorPlanScreen: View {
             return
         }
 
-        let exportPayload = FloorPlanExportData(from: floorPlanData)
+        let exportPayload = FloorPlanExportData(
+            from: floorPlanData,
+            scanHeading: scanHeading,
+            northAlignment: northAlignment,
+            isNorthUpNormalized: isNorthUpEnabled
+        )
         let title = "Scan \(formatDate(Date()))"
 
         do {
@@ -121,7 +160,7 @@ struct FloorPlanScreen: View {
 
     private func exportAsSVG() {
         let exporter = SVGExporter()
-        let svgString = exporter.export(floorPlanData)
+        let svgString = exporter.export(floorPlanData, scanHeading: scanHeading)
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("FloorPlan.svg")
 
         do {
@@ -173,7 +212,12 @@ struct FloorPlanScreen: View {
     }
 
     private func exportAsJSON() {
-        let exportPayload = FloorPlanExportData(from: floorPlanData)
+        let exportPayload = FloorPlanExportData(
+            from: floorPlanData,
+            scanHeading: scanHeading,
+            northAlignment: northAlignment,
+            isNorthUpNormalized: isNorthUpEnabled
+        )
 
         do {
             let encoder = JSONEncoder()
@@ -199,9 +243,15 @@ struct FloorPlanScreen: View {
         let renderer = ImageRenderer(content:
             FloorPlanView(
                 floorPlanData: floorPlanData,
+                scanHeading: scanHeading,
+                yawDegrees: displayYawDegrees,
+                isNorthUpEnabled: isNorthUpEnabled,
+                canToggleNorthUp: isNorthUpAvailable,
+                northUpStatusMessage: northUpStatusMessage,
                 retakeTitle: "",
                 onRetake: {},
                 onSave: {},
+                onToggleNorthUp: {},
                 onExport: {}
             )
             .frame(width: 390, height: 844)
@@ -225,5 +275,54 @@ struct FloorPlanScreen: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private func toggleNorthUp() {
+        guard isNorthUpAvailable else { return }
+        isNorthUpEnabled.toggle()
+    }
+
+    private func applyFloorPlanOrientation() {
+        let usableAlignment = isNorthUpAvailable ? northAlignment : nil
+        floorPlanData = baseFloorPlanData.oriented(
+            northAlignment: usableAlignment,
+            sourceIsNorthUpNormalized: sourceIsNorthUpNormalized,
+            desiredNorthUp: isNorthUpEnabled
+        )
+    }
+
+    private var isNorthUpAvailable: Bool {
+        northAlignment?.isReliable == true
+    }
+
+    private var northUpStatusMessage: String? {
+        if let northAlignment {
+            if northAlignment.isReliable {
+                return northAlignment.statusLabel
+            }
+            return northAlignment.unavailableReason
+        }
+
+        if let scanHeading, !scanHeading.isReliable {
+            if let accuracy = scanHeading.accuracyDegrees {
+                return "North-up unavailable: heading accuracy is low (±\(Int(accuracy.rounded()))°)."
+            }
+            return "North-up unavailable: compass is uncalibrated."
+        }
+        return "North-up unavailable: no calibrated north alignment for this scan."
+    }
+
+    private var displayYawDegrees: Double? {
+        if let calibrationYaw = northAlignment?.calibrationCameraYawDegrees {
+            return normalizedDegrees(calibrationYaw)
+        }
+        guard let scanHeading, let northAlignment else { return nil }
+        let cameraYaw = scanHeading.normalizedDegrees - northAlignment.normalizedRoomToNorthYawDegrees
+        return normalizedDegrees(cameraYaw)
+    }
+
+    private func normalizedDegrees(_ degrees: Double) -> Double {
+        let value = degrees.truncatingRemainder(dividingBy: 360)
+        return value < 0 ? value + 360 : value
     }
 }

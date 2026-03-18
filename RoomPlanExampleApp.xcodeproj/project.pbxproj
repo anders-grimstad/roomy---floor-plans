@@ -14,6 +14,10 @@
 		211E71F62F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F52F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift */; };
 		211E71F82F55A1C000BB99FE /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F72F55A1C000BB99FE /* HomeView.swift */; };
 		211E71FA2F55A1F700BB99FE /* RoomyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211E71F92F55A1F700BB99FE /* RoomyApp.swift */; };
+		216BD5BE2F69A4690092BA03 /* Silkscreen-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 216BD5BC2F69A4690092BA03 /* Silkscreen-Bold.ttf */; };
+		216BD5BF2F69A4690092BA03 /* Silkscreen-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 216BD5BD2F69A4690092BA03 /* Silkscreen-Regular.ttf */; };
+		4E1F0A6C3D8A4B1C9E2F7711 /* ScanHeading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1F0A6C3D8A4B1C9E2F7710 /* ScanHeading.swift */; };
+		4E1F0A6C3D8A4B1C9E2F7721 /* HeadingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1F0A6C3D8A4B1C9E2F7720 /* HeadingManager.swift */; };
 		A1B2C3D4E5F60718293A4B5E /* FloorPlanExportData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000728D0000000000007 /* FloorPlanExportData.swift */; };
 		A1B2C3D4E5F60718293A4B5F /* SavedScansStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000828D0000000000008 /* SavedScansStore.swift */; };
 		ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ACEF94B92820AD2400776A9D /* Assets.xcassets */; };
@@ -32,7 +36,11 @@
 		211E71F52F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomCaptureSwiftUIView.swift; sourceTree = "<group>"; };
 		211E71F72F55A1C000BB99FE /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		211E71F92F55A1F700BB99FE /* RoomyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomyApp.swift; sourceTree = "<group>"; };
+		216BD5BC2F69A4690092BA03 /* Silkscreen-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Silkscreen-Bold.ttf"; sourceTree = "<group>"; };
+		216BD5BD2F69A4690092BA03 /* Silkscreen-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Silkscreen-Regular.ttf"; sourceTree = "<group>"; };
 		35A95C3C90A8D7FA01AA694A /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
+		4E1F0A6C3D8A4B1C9E2F7710 /* ScanHeading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHeading.swift; sourceTree = "<group>"; };
+		4E1F0A6C3D8A4B1C9E2F7720 /* HeadingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadingManager.swift; sourceTree = "<group>"; };
 		ACEF94AD2820AD2300776A9D /* RoomPlanExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoomPlanExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACEF94B92820AD2400776A9D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACEF94BC2820AD2400776A9D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -91,7 +99,11 @@
 				FP00000028D0000000000002 /* FloorPlanView.swift */,
 				FP00000028D0000000000004 /* SVGExporter.swift */,
 				FP00000828D0000000000008 /* SavedScansStore.swift */,
+				4E1F0A6C3D8A4B1C9E2F7710 /* ScanHeading.swift */,
+				4E1F0A6C3D8A4B1C9E2F7720 /* HeadingManager.swift */,
 				ACEF94B92820AD2400776A9D /* Assets.xcassets */,
+				216BD5BC2F69A4690092BA03 /* Silkscreen-Bold.ttf */,
+				216BD5BD2F69A4690092BA03 /* Silkscreen-Regular.ttf */,
 				ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */,
 				ACEF94BE2820AD2400776A9D /* Info.plist */,
 				211E71ED2F55A11800BB99FE /* ActivityViewControllerRepresentable.swift */,
@@ -173,6 +185,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				216BD5BE2F69A4690092BA03 /* Silkscreen-Bold.ttf in Resources */,
+				216BD5BF2F69A4690092BA03 /* Silkscreen-Regular.ttf in Resources */,
 				ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */,
 				ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */,
 			);
@@ -190,7 +204,9 @@
 				211E71F42F55A18900BB99FE /* SavedScansView.swift in Sources */,
 				FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */,
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
+				4E1F0A6C3D8A4B1C9E2F7711 /* ScanHeading.swift in Sources */,
 				211E71F82F55A1C000BB99FE /* HomeView.swift in Sources */,
+				4E1F0A6C3D8A4B1C9E2F7721 /* HeadingManager.swift in Sources */,
 				211E71F62F55A1AE00BB99FE /* RoomCaptureSwiftUIView.swift in Sources */,
 				FP00000428D0000000000004 /* SVGExporter.swift in Sources */,
 				211E71F22F55A16500BB99FE /* FloorPlanScreen.swift in Sources */,
@@ -351,6 +367,7 @@
 				INFOPLIST_FILE = RoomPlanExampleApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Roomy;
 				INFOPLIST_KEY_NSCameraUsageDescription = "RoomCaptureView Requires Camera Access";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Roomy uses location to capture compass heading for scans.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -385,6 +402,7 @@
 				INFOPLIST_FILE = RoomPlanExampleApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Roomy;
 				INFOPLIST_KEY_NSCameraUsageDescription = "RoomCaptureView Requires Camera Access";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Roomy uses location to capture compass heading for scans.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
