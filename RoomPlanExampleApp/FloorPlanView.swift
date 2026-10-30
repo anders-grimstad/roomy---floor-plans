@@ -67,6 +67,363 @@ extension Color {
     }
 }
 
+// MARK: - Floor Plan Drawing
+
+/// Chrome-free drawing of a floor plan into a GraphicsContext.
+/// Shared by the interactive FloorPlanView and document exports/thumbnails,
+/// so what the user exports is the plan itself — never the surrounding UI.
+struct FloorPlanDrawing {
+    struct Options {
+        var showGrid = false
+        var showFurniture = true
+        var showLabels = true
+        var showDimensions = false
+    }
+
+    let data: FloorPlanData
+    let colors: FloorPlanColors
+    var options = Options()
+
+    /// Transform that fits the plan into `size` with uniform padding,
+    /// matching the conversionscript.py / SVGExporter mapping:
+    ///   x_px = (x - minX) * scale + left
+    ///   y_px = (maxY - y) * scale + top
+    func fittingTransform(in size: CGSize, padding: CGFloat = 60) -> CGAffineTransform {
+        let bounds = data.bounds
+        guard bounds.width > 0 && bounds.height > 0 else {
+            return .identity
+        }
+
+        let availableWidth = size.width - padding * 2
+        let availableHeight = size.height - padding * 2
+
+        let scaleX = availableWidth / bounds.width
+        let scaleY = availableHeight / bounds.height
+        let fitScale = min(scaleX, scaleY)
+
+        // Center the floor plan
+        let scaledWidth = bounds.width * fitScale
+        let scaledHeight = bounds.height * fitScale
+        let left = (size.width - scaledWidth) / 2
+        let top = (size.height - scaledHeight) / 2
+
+        let tx = left - bounds.minX * fitScale
+        let ty = top + bounds.maxY * fitScale
+
+        // Build explicit affine transform to avoid scaling the translation component by accident.
+        return CGAffineTransform(a: fitScale, b: 0, c: 0, d: -fitScale, tx: tx, ty: ty)
+    }
+
+    func draw(in context: GraphicsContext, size: CGSize, transform: CGAffineTransform) {
+        if options.showGrid {
+            drawGrid(context: context, size: size, transform: transform)
+        }
+
+        drawFloors(context: context, transform: transform)
+        drawOutlines(context: context, transform: transform)
+        drawWalls(context: context, transform: transform)
+        drawWindows(context: context, transform: transform)
+        drawDoors(context: context, transform: transform)
+
+        if options.showFurniture {
+            drawObjects(context: context, transform: transform)
+        }
+
+        if options.showLabels {
+            drawSectionLabels(context: context, transform: transform)
+        }
+
+        if options.showDimensions {
+            drawDimensions(context: context, transform: transform)
+        }
+    }
+
+    private func drawGrid(context: GraphicsContext, size: CGSize, transform: CGAffineTransform) {
+        let bounds = data.bounds
+        let gridSpacing: CGFloat = 1.0 // 1 meter grid
+
+        var gridPath = Path()
+
+        // Vertical lines
+        var x = floor(bounds.minX)
+        while x <= ceil(bounds.maxX) {
+            let start = CGPoint(x: x, y: bounds.minY).applying(transform)
+            let end = CGPoint(x: x, y: bounds.maxY).applying(transform)
+            gridPath.move(to: start)
+            gridPath.addLine(to: end)
+            x += gridSpacing
+        }
+
+        // Horizontal lines
+        var y = floor(bounds.minY)
+        while y <= ceil(bounds.maxY) {
+            let start = CGPoint(x: bounds.minX, y: y).applying(transform)
+            let end = CGPoint(x: bounds.maxX, y: y).applying(transform)
+            gridPath.move(to: start)
+            gridPath.addLine(to: end)
+            y += gridSpacing
+        }
+
+        context.stroke(gridPath, with: .color(colors.gridLine), lineWidth: 0.5)
+    }
+
+    private func drawFloors(context: GraphicsContext, transform: CGAffineTransform) {
+        // Draw all floor outlines filled
+        for floorOutline in data.floorOutlines {
+            guard !floorOutline.outline.isEmpty else { continue }
+
+            var floorPath = Path()
+            let firstPoint = floorOutline.outline[0].cgPoint.applying(transform)
+            floorPath.move(to: firstPoint)
+
+            for point in floorOutline.outline.dropFirst() {
+                floorPath.addLine(to: point.cgPoint.applying(transform))
+            }
+            floorPath.closeSubpath()
+
+            context.fill(floorPath, with: .color(colors.floor))
+        }
+    }
+
+    private func drawOutlines(context: GraphicsContext, transform: CGAffineTransform) {
+        // Draw floor outline strokes (thin lines, matching Python's outline style)
+        for floorOutline in data.floorOutlines {
+            guard floorOutline.outline.count >= 2 else { continue }
+
+            var outlinePath = Path()
+            let firstPoint = floorOutline.outline[0].cgPoint.applying(transform)
+            outlinePath.move(to: firstPoint)
+
+            for point in floorOutline.outline.dropFirst() {
+                outlinePath.addLine(to: point.cgPoint.applying(transform))
+            }
+            outlinePath.closeSubpath()
+
+            context.stroke(
+                outlinePath,
+                with: .color(colors.outline),
+                style: StrokeStyle(lineWidth: 2, lineCap: .square)
+            )
+        }
+    }
+
+    private func drawWalls(context: GraphicsContext, transform: CGAffineTransform) {
+        // Wall thickness: ~6cm in meters scaled to pixels
+        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
+
+        for wall in data.walls {
+            let start = wall.start.cgPoint.applying(transform)
+            let end = wall.end.cgPoint.applying(transform)
+
+            var wallPath = Path()
+            wallPath.move(to: start)
+            wallPath.addLine(to: end)
+
+            context.stroke(
+                wallPath,
+                with: .color(colors.wallStroke),
+                style: StrokeStyle(lineWidth: wallPixelWidth, lineCap: .square, lineJoin: .miter)
+            )
+        }
+    }
+
+    private func drawDoors(context: GraphicsContext, transform: CGAffineTransform) {
+        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
+
+        for door in data.doors {
+            // Use pre-calculated start/end points
+            let start = door.start.cgPoint.applying(transform)
+            let end = door.end.cgPoint.applying(transform)
+
+            // Draw gap in wall (background color to "erase" wall)
+            var gapPath = Path()
+            gapPath.move(to: start)
+            gapPath.addLine(to: end)
+            context.stroke(
+                gapPath,
+                with: .color(colors.background),
+                style: StrokeStyle(lineWidth: wallPixelWidth + 2, lineCap: .square)
+            )
+
+            // Draw door line
+            var doorPath = Path()
+            doorPath.move(to: start)
+            doorPath.addLine(to: end)
+            context.stroke(
+                doorPath,
+                with: .color(colors.door),
+                style: StrokeStyle(lineWidth: max(2.0, wallPixelWidth * 0.6), lineCap: .square)
+            )
+
+            // Draw door swing arc
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let doorLength = sqrt(dx * dx + dy * dy)
+            let doorAngle = atan2(dy, dx)
+
+            var arcPath = Path()
+            arcPath.addArc(
+                center: start,
+                radius: doorLength * 0.9,
+                startAngle: Angle(radians: doorAngle),
+                endAngle: Angle(radians: doorAngle + .pi / 2),
+                clockwise: false
+            )
+            context.stroke(
+                arcPath,
+                with: .color(colors.doorSwing),
+                style: StrokeStyle(lineWidth: 1, dash: [4, 4])
+            )
+
+            // Draw door leaf
+            let leafEnd = CGPoint(
+                x: start.x + cos(doorAngle + .pi / 4) * doorLength * 0.9,
+                y: start.y + sin(doorAngle + .pi / 4) * doorLength * 0.9
+            )
+            var leafPath = Path()
+            leafPath.move(to: start)
+            leafPath.addLine(to: leafEnd)
+            context.stroke(leafPath, with: .color(colors.door), lineWidth: 2)
+        }
+    }
+
+    private func drawWindows(context: GraphicsContext, transform: CGAffineTransform) {
+        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
+
+        for window in data.windows {
+            // Use pre-calculated start/end points
+            let start = window.start.cgPoint.applying(transform)
+            let end = window.end.cgPoint.applying(transform)
+
+            // Draw gap in wall
+            var gapPath = Path()
+            gapPath.move(to: start)
+            gapPath.addLine(to: end)
+            context.stroke(
+                gapPath,
+                with: .color(colors.background),
+                style: StrokeStyle(lineWidth: wallPixelWidth + 2, lineCap: .square)
+            )
+
+            // Draw window (triple line effect for glass appearance)
+            var windowPath = Path()
+            windowPath.move(to: start)
+            windowPath.addLine(to: end)
+
+            let windowWidth = max(2.0, wallPixelWidth * 0.7)
+            context.stroke(windowPath, with: .color(colors.window), lineWidth: windowWidth)
+            context.stroke(windowPath, with: .color(colors.background), lineWidth: windowWidth * 0.5)
+            context.stroke(windowPath, with: .color(colors.window), lineWidth: 1)
+        }
+    }
+
+    private func drawObjects(context: GraphicsContext, transform: CGAffineTransform) {
+        for object in data.objects {
+            let center = object.position.cgPoint.applying(transform)
+            let scale = abs(transform.a)
+            let scaledWidth = max(4.0, object.width * scale)
+            let scaledDepth = max(4.0, object.depth * scale)
+
+            // Draw rotated rectangle for furniture
+            var objectContext = context
+            objectContext.translateBy(x: center.x, y: center.y)
+            // Negate angle because we flip Y in coordinate transform
+            objectContext.rotate(by: Angle(radians: -object.angle))
+
+            let rect = CGRect(
+                x: -scaledWidth / 2,
+                y: -scaledDepth / 2,
+                width: scaledWidth,
+                height: scaledDepth
+            )
+
+            let objectPath = Path(roundedRect: rect, cornerRadius: 4)
+            objectContext.fill(objectPath, with: .color(colors.furniture))
+            objectContext.stroke(objectPath, with: .color(colors.furnitureStroke), lineWidth: 1)
+
+            // Draw emoji icon for the object
+            let emoji = Text(object.category.emoji)
+                .font(.system(size: min(scaledWidth, scaledDepth) * 0.4))
+            objectContext.draw(emoji, at: .zero)
+        }
+    }
+
+    private func drawSectionLabels(context: GraphicsContext, transform: CGAffineTransform) {
+        for section in data.sections {
+            let center = section.center.cgPoint.applying(transform)
+
+            let label = Text(section.label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(colors.sectionLabel)
+
+            context.draw(label, at: center, anchor: .center)
+        }
+
+        // If no sections, draw room labels with area for each floor outline
+        if data.sections.isEmpty {
+            for (index, outline) in data.floorOutlines.enumerated() {
+                let centroid = outline.centroid.cgPoint.applying(transform)
+
+                let roomLabel = Text("Room \(index + 1)")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(colors.wall)
+
+                let areaLabel = Text(String(format: "%.1f m²", outline.area))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(colors.areaText)
+
+                context.draw(roomLabel, at: CGPoint(x: centroid.x, y: centroid.y - 10), anchor: .center)
+                context.draw(areaLabel, at: CGPoint(x: centroid.x, y: centroid.y + 10), anchor: .center)
+            }
+        }
+    }
+
+    private func drawDimensions(context: GraphicsContext, transform: CGAffineTransform) {
+        for dimension in data.dimensions {
+            let start = dimension.start.cgPoint.applying(transform)
+            let end = dimension.end.cgPoint.applying(transform)
+
+            // Calculate perpendicular offset
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let length = sqrt(dx * dx + dy * dy)
+            guard length > 0 else { continue }
+
+            let perpX = -dy / length * 15
+            let perpY = dx / length * 15
+
+            let offsetStart = CGPoint(x: start.x + perpX, y: start.y + perpY)
+            let offsetEnd = CGPoint(x: end.x + perpX, y: end.y + perpY)
+            let midPoint = CGPoint(x: (offsetStart.x + offsetEnd.x) / 2, y: (offsetStart.y + offsetEnd.y) / 2)
+
+            // Draw dimension line
+            var dimPath = Path()
+            dimPath.move(to: offsetStart)
+            dimPath.addLine(to: offsetEnd)
+            context.stroke(dimPath, with: .color(colors.dimension), style: StrokeStyle(lineWidth: 1))
+
+            // Draw end ticks
+            let tickLength: CGFloat = 6
+            let tickPerpX = -perpX / 15 * tickLength
+            let tickPerpY = -perpY / 15 * tickLength
+
+            var tickPath = Path()
+            tickPath.move(to: CGPoint(x: offsetStart.x - tickPerpX, y: offsetStart.y - tickPerpY))
+            tickPath.addLine(to: CGPoint(x: offsetStart.x + tickPerpX, y: offsetStart.y + tickPerpY))
+            tickPath.move(to: CGPoint(x: offsetEnd.x - tickPerpX, y: offsetEnd.y - tickPerpY))
+            tickPath.addLine(to: CGPoint(x: offsetEnd.x + tickPerpX, y: offsetEnd.y + tickPerpY))
+            context.stroke(tickPath, with: .color(colors.dimension), lineWidth: 1)
+
+            // Draw label
+            let label = Text(dimension.label)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundColor(colors.dimensionText)
+
+            context.draw(label, at: midPoint, anchor: .center)
+        }
+    }
+}
+
 // MARK: - Floor Plan View
 
 struct FloorPlanView: View {
@@ -82,47 +439,36 @@ struct FloorPlanView: View {
     let onToggleNorthUp: () -> Void
     let onExport: () -> Void
     let colors = FloorPlanColors()
-    
+
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @GestureState private var dragTranslation: CGSize = .zero
     @State private var lastScale: CGFloat = 1.0
-    
+
     @State private var showDimensions: Bool = false
     @State private var showFurniture: Bool = true
     @State private var showGrid: Bool = false
     @State private var showLabels: Bool = true
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 colors.background.ignoresSafeArea()
-                
+
                 // Floor plan canvas
                 Canvas { context, size in
-                    let transform = calculateTransform(size: size)
-                    
-                    if showGrid {
-                        drawGrid(context: context, size: size, transform: transform)
-                    }
-                    
-                    drawFloors(context: context, transform: transform)
-                    drawOutlines(context: context, transform: transform)
-                    drawWalls(context: context, transform: transform)
-                    drawWindows(context: context, transform: transform)
-                    drawDoors(context: context, transform: transform)
-                    
-                    if showFurniture {
-                        drawObjects(context: context, transform: transform)
-                    }
-                    
-                    if showLabels {
-                        drawSectionLabels(context: context, transform: transform)
-                    }
-                    
-                    if showDimensions {
-                        drawDimensions(context: context, transform: transform)
-                    }
+                    let drawing = FloorPlanDrawing(
+                        data: floorPlanData,
+                        colors: colors,
+                        options: FloorPlanDrawing.Options(
+                            showGrid: showGrid,
+                            showFurniture: showFurniture,
+                            showLabels: showLabels,
+                            showDimensions: showDimensions
+                        )
+                    )
+                    let transform = drawing.fittingTransform(in: size)
+                    drawing.draw(in: context, size: size, transform: transform)
                 }
                 .scaleEffect(scale)
                 .offset(CGSize(
@@ -161,334 +507,11 @@ struct FloorPlanView: View {
                             }
                         }
                 )
-                
+
                 headerOverlay
                 zoomControlsOverlay
                 viewOptionsDockOverlay
             }
-        }
-    }
-    
-    // MARK: - Transform Calculation
-    
-    private func calculateTransform(size: CGSize) -> CGAffineTransform {
-        let bounds = floorPlanData.bounds
-        guard bounds.width > 0 && bounds.height > 0 else {
-            return .identity
-        }
-        
-        let padding: CGFloat = 60
-        let availableWidth = size.width - padding * 2
-        let availableHeight = size.height - padding * 2
-        
-        let scaleX = availableWidth / bounds.width
-        let scaleY = availableHeight / bounds.height
-        let fitScale = min(scaleX, scaleY)
-        
-        // Center the floor plan
-        let scaledWidth = bounds.width * fitScale
-        let scaledHeight = bounds.height * fitScale
-        let left = (size.width - scaledWidth) / 2
-        let top = (size.height - scaledHeight) / 2
-        
-        // Match conversionscript.py / SVGExporter mapping:
-        //   x_px = (x - minX) * scale + left
-        //   y_px = (maxY - y) * scale + top
-        //
-        // This is equivalent to:
-        //   x_px = x * scale + (left - minX * scale)
-        //   y_px = y * (-scale) + (top + maxY * scale)
-        let tx = left - bounds.minX * fitScale
-        let ty = top + bounds.maxY * fitScale
-        
-        // Build explicit affine transform to avoid scaling the translation component by accident.
-        return CGAffineTransform(a: fitScale, b: 0, c: 0, d: -fitScale, tx: tx, ty: ty)
-    }
-    
-    // MARK: - Drawing Methods
-    
-    private func drawGrid(context: GraphicsContext, size: CGSize, transform: CGAffineTransform) {
-        let bounds = floorPlanData.bounds
-        let gridSpacing: CGFloat = 1.0 // 1 meter grid
-        
-        var gridPath = Path()
-        
-        // Vertical lines
-        var x = floor(bounds.minX)
-        while x <= ceil(bounds.maxX) {
-            let start = CGPoint(x: x, y: bounds.minY).applying(transform)
-            let end = CGPoint(x: x, y: bounds.maxY).applying(transform)
-            gridPath.move(to: start)
-            gridPath.addLine(to: end)
-            x += gridSpacing
-        }
-        
-        // Horizontal lines
-        var y = floor(bounds.minY)
-        while y <= ceil(bounds.maxY) {
-            let start = CGPoint(x: bounds.minX, y: y).applying(transform)
-            let end = CGPoint(x: bounds.maxX, y: y).applying(transform)
-            gridPath.move(to: start)
-            gridPath.addLine(to: end)
-            y += gridSpacing
-        }
-        
-        context.stroke(gridPath, with: .color(colors.gridLine), lineWidth: 0.5)
-    }
-    
-    private func drawFloors(context: GraphicsContext, transform: CGAffineTransform) {
-        // Draw all floor outlines filled
-        for floorOutline in floorPlanData.floorOutlines {
-            guard !floorOutline.outline.isEmpty else { continue }
-            
-            var floorPath = Path()
-            let firstPoint = floorOutline.outline[0].cgPoint.applying(transform)
-            floorPath.move(to: firstPoint)
-            
-            for point in floorOutline.outline.dropFirst() {
-                floorPath.addLine(to: point.cgPoint.applying(transform))
-            }
-            floorPath.closeSubpath()
-            
-            context.fill(floorPath, with: .color(colors.floor))
-        }
-    }
-    
-    private func drawOutlines(context: GraphicsContext, transform: CGAffineTransform) {
-        // Draw floor outline strokes (thin lines, matching Python's outline style)
-        for floorOutline in floorPlanData.floorOutlines {
-            guard floorOutline.outline.count >= 2 else { continue }
-            
-            var outlinePath = Path()
-            let firstPoint = floorOutline.outline[0].cgPoint.applying(transform)
-            outlinePath.move(to: firstPoint)
-            
-            for point in floorOutline.outline.dropFirst() {
-                outlinePath.addLine(to: point.cgPoint.applying(transform))
-            }
-            outlinePath.closeSubpath()
-            
-            context.stroke(
-                outlinePath,
-                with: .color(colors.outline),
-                style: StrokeStyle(lineWidth: 2, lineCap: .square)
-            )
-        }
-    }
-    
-    private func drawWalls(context: GraphicsContext, transform: CGAffineTransform) {
-        // Wall thickness: ~6cm in meters scaled to pixels
-        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
-        
-        for wall in floorPlanData.walls {
-            let start = wall.start.cgPoint.applying(transform)
-            let end = wall.end.cgPoint.applying(transform)
-            
-            var wallPath = Path()
-            wallPath.move(to: start)
-            wallPath.addLine(to: end)
-            
-            context.stroke(
-                wallPath,
-                with: .color(colors.wallStroke),
-                style: StrokeStyle(lineWidth: wallPixelWidth, lineCap: .square, lineJoin: .miter)
-            )
-        }
-    }
-    
-    private func drawDoors(context: GraphicsContext, transform: CGAffineTransform) {
-        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
-        
-        for door in floorPlanData.doors {
-            // Use pre-calculated start/end points
-            let start = door.start.cgPoint.applying(transform)
-            let end = door.end.cgPoint.applying(transform)
-            
-            // Draw gap in wall (background color to "erase" wall)
-            var gapPath = Path()
-            gapPath.move(to: start)
-            gapPath.addLine(to: end)
-            context.stroke(
-                gapPath,
-                with: .color(colors.background),
-                style: StrokeStyle(lineWidth: wallPixelWidth + 2, lineCap: .square)
-            )
-            
-            // Draw door line
-            var doorPath = Path()
-            doorPath.move(to: start)
-            doorPath.addLine(to: end)
-            context.stroke(
-                doorPath,
-                with: .color(colors.door),
-                style: StrokeStyle(lineWidth: max(2.0, wallPixelWidth * 0.6), lineCap: .square)
-            )
-            
-            // Draw door swing arc
-            let dx = end.x - start.x
-            let dy = end.y - start.y
-            let doorLength = sqrt(dx * dx + dy * dy)
-            let doorAngle = atan2(dy, dx)
-            
-            var arcPath = Path()
-            arcPath.addArc(
-                center: start,
-                radius: doorLength * 0.9,
-                startAngle: Angle(radians: doorAngle),
-                endAngle: Angle(radians: doorAngle + .pi / 2),
-                clockwise: false
-            )
-            context.stroke(
-                arcPath,
-                with: .color(colors.doorSwing),
-                style: StrokeStyle(lineWidth: 1, dash: [4, 4])
-            )
-            
-            // Draw door leaf
-            let leafEnd = CGPoint(
-                x: start.x + cos(doorAngle + .pi / 4) * doorLength * 0.9,
-                y: start.y + sin(doorAngle + .pi / 4) * doorLength * 0.9
-            )
-            var leafPath = Path()
-            leafPath.move(to: start)
-            leafPath.addLine(to: leafEnd)
-            context.stroke(leafPath, with: .color(colors.door), lineWidth: 2)
-        }
-    }
-    
-    private func drawWindows(context: GraphicsContext, transform: CGAffineTransform) {
-        let wallPixelWidth = max(2.0, abs(transform.a) * 0.06)
-        
-        for window in floorPlanData.windows {
-            // Use pre-calculated start/end points
-            let start = window.start.cgPoint.applying(transform)
-            let end = window.end.cgPoint.applying(transform)
-            
-            // Draw gap in wall
-            var gapPath = Path()
-            gapPath.move(to: start)
-            gapPath.addLine(to: end)
-            context.stroke(
-                gapPath,
-                with: .color(colors.background),
-                style: StrokeStyle(lineWidth: wallPixelWidth + 2, lineCap: .square)
-            )
-            
-            // Draw window (triple line effect for glass appearance)
-            var windowPath = Path()
-            windowPath.move(to: start)
-            windowPath.addLine(to: end)
-            
-            let windowWidth = max(2.0, wallPixelWidth * 0.7)
-            context.stroke(windowPath, with: .color(colors.window), lineWidth: windowWidth)
-            context.stroke(windowPath, with: .color(colors.background), lineWidth: windowWidth * 0.5)
-            context.stroke(windowPath, with: .color(colors.window), lineWidth: 1)
-        }
-    }
-    
-    private func drawObjects(context: GraphicsContext, transform: CGAffineTransform) {
-        for object in floorPlanData.objects {
-            let center = object.position.cgPoint.applying(transform)
-            let scale = abs(transform.a)
-            let scaledWidth = max(4.0, object.width * scale)
-            let scaledDepth = max(4.0, object.depth * scale)
-            
-            // Draw rotated rectangle for furniture
-            var objectContext = context
-            objectContext.translateBy(x: center.x, y: center.y)
-            // Negate angle because we flip Y in coordinate transform
-            objectContext.rotate(by: Angle(radians: -object.angle))
-            
-            let rect = CGRect(
-                x: -scaledWidth / 2,
-                y: -scaledDepth / 2,
-                width: scaledWidth,
-                height: scaledDepth
-            )
-            
-            let objectPath = Path(roundedRect: rect, cornerRadius: 4)
-            objectContext.fill(objectPath, with: .color(colors.furniture))
-            objectContext.stroke(objectPath, with: .color(colors.furnitureStroke), lineWidth: 1)
-            
-            // Draw emoji icon for the object
-            let emoji = Text(object.category.emoji)
-                .font(.system(size: min(scaledWidth, scaledDepth) * 0.4))
-            objectContext.draw(emoji, at: .zero)
-        }
-    }
-    
-    private func drawSectionLabels(context: GraphicsContext, transform: CGAffineTransform) {
-        for section in floorPlanData.sections {
-            let center = section.center.cgPoint.applying(transform)
-            
-            let label = Text(section.label)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(colors.sectionLabel)
-            
-            context.draw(label, at: center, anchor: .center)
-        }
-        
-        // If no sections, draw room labels with area for each floor outline
-        if floorPlanData.sections.isEmpty {
-            for (index, outline) in floorPlanData.floorOutlines.enumerated() {
-                let centroid = outline.centroid.cgPoint.applying(transform)
-                
-                let roomLabel = Text("Room \(index + 1)")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(colors.wall)
-                
-                let areaLabel = Text(String(format: "%.1f m²", outline.area))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(colors.areaText)
-                
-                context.draw(roomLabel, at: CGPoint(x: centroid.x, y: centroid.y - 10), anchor: .center)
-                context.draw(areaLabel, at: CGPoint(x: centroid.x, y: centroid.y + 10), anchor: .center)
-            }
-        }
-    }
-    
-    private func drawDimensions(context: GraphicsContext, transform: CGAffineTransform) {
-        for dimension in floorPlanData.dimensions {
-            let start = dimension.start.cgPoint.applying(transform)
-            let end = dimension.end.cgPoint.applying(transform)
-            
-            // Calculate perpendicular offset
-            let dx = end.x - start.x
-            let dy = end.y - start.y
-            let length = sqrt(dx * dx + dy * dy)
-            guard length > 0 else { continue }
-            
-            let perpX = -dy / length * 15
-            let perpY = dx / length * 15
-            
-            let offsetStart = CGPoint(x: start.x + perpX, y: start.y + perpY)
-            let offsetEnd = CGPoint(x: end.x + perpX, y: end.y + perpY)
-            let midPoint = CGPoint(x: (offsetStart.x + offsetEnd.x) / 2, y: (offsetStart.y + offsetEnd.y) / 2)
-            
-            // Draw dimension line
-            var dimPath = Path()
-            dimPath.move(to: offsetStart)
-            dimPath.addLine(to: offsetEnd)
-            context.stroke(dimPath, with: .color(colors.dimension), style: StrokeStyle(lineWidth: 1))
-            
-            // Draw end ticks
-            let tickLength: CGFloat = 6
-            let tickPerpX = -perpX / 15 * tickLength
-            let tickPerpY = -perpY / 15 * tickLength
-            
-            var tickPath = Path()
-            tickPath.move(to: CGPoint(x: offsetStart.x - tickPerpX, y: offsetStart.y - tickPerpY))
-            tickPath.addLine(to: CGPoint(x: offsetStart.x + tickPerpX, y: offsetStart.y + tickPerpY))
-            tickPath.move(to: CGPoint(x: offsetEnd.x - tickPerpX, y: offsetEnd.y - tickPerpY))
-            tickPath.addLine(to: CGPoint(x: offsetEnd.x + tickPerpX, y: offsetEnd.y + tickPerpY))
-            context.stroke(tickPath, with: .color(colors.dimension), lineWidth: 1)
-            
-            // Draw label
-            let label = Text(dimension.label)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundColor(colors.dimensionText)
-            
-            context.draw(label, at: midPoint, anchor: .center)
         }
     }
     

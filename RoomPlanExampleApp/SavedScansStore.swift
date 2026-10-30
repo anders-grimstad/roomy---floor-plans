@@ -51,6 +51,14 @@ struct SavedScansStore {
         scanFolderURL(for: scanId).appendingPathComponent("room.usdz")
     }
 
+    func roomJSONURL(for scanId: String) -> URL {
+        scanFolderURL(for: scanId).appendingPathComponent("room.json")
+    }
+
+    func hasUSDZ(for scanId: String) -> Bool {
+        fileManager.fileExists(atPath: roomUSDZURL(for: scanId).path)
+    }
+
     func loadIndex() -> [SavedScanRecord] {
         guard let data = try? Data(contentsOf: indexURL) else {
             return []
@@ -92,10 +100,67 @@ struct SavedScansStore {
 
         var index = loadIndex()
         index.insert(record, at: 0)
-        let indexPayload = try encoder.encode(index)
-        try indexPayload.write(to: indexURL)
+        try writeIndex(index)
 
         return record
+    }
+
+    func updateScan(id: String, exportData: FloorPlanExportData, thumbnail: UIImage) throws {
+        let scanURL = scanFolderURL(for: id)
+        guard fileManager.fileExists(atPath: scanURL.path) else { return }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+
+        let exportDataURL = scanURL.appendingPathComponent("floorplan.json")
+        try encoder.encode(exportData).write(to: exportDataURL)
+
+        if let thumbnailData = thumbnail.pngData() {
+            try thumbnailData.write(to: scanURL.appendingPathComponent("thumbnail.png"))
+        }
+
+        var index = loadIndex()
+        if let position = index.firstIndex(where: { $0.id == id }) {
+            let old = index[position]
+            index[position] = SavedScanRecord(
+                id: old.id,
+                createdAt: old.createdAt,
+                title: old.title,
+                totalArea: exportData.totalArea
+            )
+            try writeIndex(index)
+        }
+    }
+
+    func renameScan(id: String, to title: String) throws {
+        var index = loadIndex()
+        guard let position = index.firstIndex(where: { $0.id == id }) else { return }
+        let old = index[position]
+        index[position] = SavedScanRecord(
+            id: old.id,
+            createdAt: old.createdAt,
+            title: title,
+            totalArea: old.totalArea
+        )
+        try writeIndex(index)
+    }
+
+    func deleteScan(id: String) throws {
+        let folder = scanFolderURL(for: id)
+        if fileManager.fileExists(atPath: folder.path) {
+            try fileManager.removeItem(at: folder)
+        }
+        var index = loadIndex()
+        index.removeAll { $0.id == id }
+        try writeIndex(index)
+    }
+
+    private func writeIndex(_ index: [SavedScanRecord]) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(index).write(to: indexURL)
     }
 
     func loadFloorPlanExport(for scanId: String) -> FloorPlanExportData? {

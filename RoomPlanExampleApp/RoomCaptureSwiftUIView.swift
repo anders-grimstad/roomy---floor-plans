@@ -253,6 +253,8 @@ struct RoomCaptureSwiftUIView: View {
     @State private var recalibrationToken = 0
     @State private var calibrationWindowStart: Date?
     @State private var calibrationSamples: [NorthCalibrationSample] = []
+    @State private var autosavedRecord: SavedScanRecord?
+    @State private var toastMessage: String?
     @StateObject private var headingManager = HeadingManager()
 
     var body: some View {
@@ -266,6 +268,7 @@ struct RoomCaptureSwiftUIView: View {
                     finalResults = room
                     isProcessing = false
                     scanHeading = scanHeading ?? snapshotHeadingForDisplay()
+                    autosaveScan(room)
                 },
                 onCalibrationSample: { cameraYawDegrees, sampleDate in
                     calibrateNorthAlignment(cameraYawDegrees: cameraYawDegrees, sampleDate: sampleDate)
@@ -305,11 +308,19 @@ struct RoomCaptureSwiftUIView: View {
         }
         .fullScreenCover(isPresented: $showFloorPlan) {
             if let room = finalResults {
-                FloorPlanScreen(capturedRoom: room, scanHeading: scanHeading, northAlignment: northAlignment, onRetake: {
-                    showFloorPlan = false
-                })
+                FloorPlanScreen(
+                    capturedRoom: room,
+                    scanHeading: scanHeading,
+                    northAlignment: northAlignment,
+                    savedScanId: autosavedRecord?.id,
+                    scanTitle: autosavedRecord?.title,
+                    onRetake: {
+                        showFloorPlan = false
+                    }
+                )
             }
         }
+        .toast(message: $toastMessage)
         .sheet(isPresented: $showExportShare) {
             ActivityViewControllerRepresentable(items: exportItems)
         }
@@ -491,8 +502,59 @@ struct RoomCaptureSwiftUIView: View {
         finalResults = nil
         isProcessing = false
         isScanning = true
+        // The previous autosaved scan stays in the library; a retake gets its own record.
+        autosavedRecord = nil
         resetCalibrationState(clearAlignment: true)
     }
+
+    /// Persists the completed scan immediately — floor plan, thumbnail, 3D model,
+    /// and the raw RoomPlan data — so no exit path can silently discard it.
+    private func autosaveScan(_ room: CapturedRoom) {
+        guard autosavedRecord == nil else { return }
+
+        let generator = FloorPlanGenerator(capturedRoom: room)
+        let planData = generator.generate()
+        let exportPayload = FloorPlanExportData(
+            from: planData,
+            scanHeading: scanHeading,
+            northAlignment: northAlignment,
+            isNorthUpNormalized: false
+        )
+        let title = "Scan \(Self.autosaveTitleFormatter.string(from: Date()))"
+
+        let renderer = ImageRenderer(content: FloorPlanExportView(
+            floorPlanData: planData,
+            title: title,
+            capturedAt: Date(),
+            showsTitleBlock: false
+        ))
+        renderer.scale = 1
+        guard let thumbnail = renderer.uiImage else {
+            errorMessage = "Could not save scan automatically: failed to render preview."
+            showError = true
+            return
+        }
+
+        do {
+            let store = SavedScansStore()
+            let record = try store.saveScan(title: title, exportData: exportPayload, thumbnail: thumbnail)
+            autosavedRecord = record
+            // Full-fidelity assets: 3D model for in-app viewing, raw data for re-processing.
+            try? room.export(to: store.roomUSDZURL(for: record.id), exportOptions: .mesh)
+            try? JSONEncoder().encode(room).write(to: store.roomJSONURL(for: record.id))
+            toastMessage = "Saved to library"
+        } catch {
+            errorMessage = "Could not save scan automatically: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+
+    private static let autosaveTitleFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
 
     private func requestManualRecalibration() {
         guard isScanning else { return }

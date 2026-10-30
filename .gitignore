@@ -4,6 +4,7 @@
 
 # Finder
 .DS_Store
+.cursor
 
 # Project-local artifacts
 .designs/

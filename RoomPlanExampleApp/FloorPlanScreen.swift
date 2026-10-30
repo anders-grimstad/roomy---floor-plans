@@ -17,22 +17,27 @@ struct FloorPlanScreen: View {
     let scanHeading: ScanHeading?
     let northAlignment: ScanNorthAlignment?
     let sourceIsNorthUpNormalized: Bool
+    let scanTitle: String?
     let onRetake: (() -> Void)?
 
     @State private var baseFloorPlanData: FloorPlanData = .empty
     @State private var floorPlanData: FloorPlanData = .empty
     @State private var isNorthUpEnabled: Bool
+    @State private var savedScanId: String?
     @State private var showExportFormatPicker = false
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
+    @State private var toastMessage: String?
 
     init(
         capturedRoom: CapturedRoom,
         scanHeading: ScanHeading? = nil,
         northAlignment: ScanNorthAlignment? = nil,
+        savedScanId: String? = nil,
+        scanTitle: String? = nil,
         onRetake: (() -> Void)? = nil
     ) {
         self.capturedRoom = capturedRoom
@@ -40,20 +45,24 @@ struct FloorPlanScreen: View {
         self.scanHeading = scanHeading
         self.northAlignment = northAlignment
         self.sourceIsNorthUpNormalized = false
+        self.scanTitle = scanTitle
         self.onRetake = onRetake
         self._isNorthUpEnabled = State(initialValue: northAlignment?.isReliable ?? false)
+        self._savedScanId = State(initialValue: savedScanId)
     }
 
-    init(exportData: FloorPlanExportData) {
+    init(exportData: FloorPlanExportData, savedScanId: String? = nil, scanTitle: String? = nil) {
         self.capturedRoom = nil
         self.exportData = exportData
         self.scanHeading = exportData.scanHeading
         self.northAlignment = exportData.northAlignment
         self.sourceIsNorthUpNormalized = exportData.isNorthUpNormalized ?? false
+        self.scanTitle = scanTitle
         self.onRetake = nil
         let alignmentIsUsable = exportData.northAlignment?.isReliable == true
         let initialNorthUp = alignmentIsUsable ? (exportData.isNorthUpNormalized ?? true) : false
         self._isNorthUpEnabled = State(initialValue: initialNorthUp)
+        self._savedScanId = State(initialValue: savedScanId)
     }
 
     var body: some View {
@@ -89,6 +98,7 @@ struct FloorPlanScreen: View {
         } message: {
             Text(alertMessage)
         }
+        .toast(message: $toastMessage)
     }
 
     // MARK: - Floor Plan Generation
@@ -119,7 +129,7 @@ struct FloorPlanScreen: View {
     // MARK: - Save
 
     private func saveScan() {
-        guard let image = renderFloorPlanImage() else {
+        guard let thumbnail = renderThumbnailImage() else {
             showError("Failed to generate preview image.")
             return
         }
@@ -130,29 +140,42 @@ struct FloorPlanScreen: View {
             northAlignment: northAlignment,
             isNorthUpNormalized: isNorthUpEnabled
         )
-        let title = "Scan \(formatDate(Date()))"
 
         do {
             let store = SavedScansStore()
-            let record = try store.saveScan(title: title, exportData: exportPayload, thumbnail: image)
-            var usdzErrorMessage: String?
-
-            if let capturedRoom = capturedRoom {
-                do {
-                    let usdzURL = store.roomUSDZURL(for: record.id)
-                    try capturedRoom.export(to: usdzURL, exportOptions: .mesh)
-                } catch {
-                    usdzErrorMessage = error.localizedDescription
-                }
-            }
-
-            if let usdzError = usdzErrorMessage {
-                showAlert(title: "Saved with Issues", message: "Scan saved, but USDZ export failed: \(usdzError)")
+            if let savedScanId {
+                try store.updateScan(id: savedScanId, exportData: exportPayload, thumbnail: thumbnail)
+                ensureRawAssets(store: store, scanId: savedScanId)
+                toastMessage = "Scan updated"
             } else {
-                showAlert(title: "Saved", message: "This scan is now available in Saved scans.")
+                let title = scanTitle ?? "Scan \(formatDate(Date()))"
+                let record = try store.saveScan(title: title, exportData: exportPayload, thumbnail: thumbnail)
+                savedScanId = record.id
+                ensureRawAssets(store: store, scanId: record.id)
+                toastMessage = "Saved to library"
             }
         } catch {
             showError("Failed to save scan: \(error.localizedDescription)")
+        }
+    }
+
+    /// Writes the 3D model and raw RoomPlan data alongside the saved plan when available,
+    /// so the scan can be re-viewed in 3D and re-processed later.
+    private func ensureRawAssets(store: SavedScansStore, scanId: String) {
+        guard let capturedRoom else { return }
+
+        if !store.hasUSDZ(for: scanId) {
+            do {
+                try capturedRoom.export(to: store.roomUSDZURL(for: scanId), exportOptions: .mesh)
+            } catch {
+                toastMessage = nil
+                showAlert(title: "Saved with Issues", message: "Scan saved, but USDZ export failed: \(error.localizedDescription)")
+            }
+        }
+
+        let roomJSONURL = store.roomJSONURL(for: scanId)
+        if !FileManager.default.fileExists(atPath: roomJSONURL.path) {
+            try? JSONEncoder().encode(capturedRoom).write(to: roomJSONURL)
         }
     }
 
@@ -172,7 +195,7 @@ struct FloorPlanScreen: View {
     }
 
     private func exportAsImage() {
-        guard let image = renderFloorPlanImage() else {
+        guard let image = renderExportImage(scale: 2) else {
             showError("Failed to generate image.")
             return
         }
@@ -190,24 +213,26 @@ struct FloorPlanScreen: View {
         }
     }
 
+    @MainActor
     private func exportAsPDF() {
-        guard let image = renderFloorPlanImage() else {
-            showError("Failed to generate image for PDF.")
-            return
+        let renderer = ImageRenderer(content: exportDocumentView())
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("FloorPlan.pdf")
+
+        var succeeded = false
+        renderer.render { size, render in
+            var mediaBox = CGRect(origin: .zero, size: size)
+            guard let context = CGContext(tempURL as CFURL, mediaBox: &mediaBox, nil) else { return }
+            context.beginPDFPage(nil)
+            render(context)
+            context.endPDFPage()
+            context.closePDF()
+            succeeded = true
         }
 
-        let pdfData = NSMutableData()
-        let imageSize = image.size
-        let bounds = CGRect(origin: .zero, size: imageSize)
-
-        UIGraphicsBeginPDFContextToData(pdfData, bounds, nil)
-        UIGraphicsBeginPDFPage()
-
-        image.draw(in: bounds)
-        UIGraphicsEndPDFContext()
-
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("FloorPlan.pdf")
-        pdfData.write(to: tempURL, atomically: true)
+        guard succeeded else {
+            showError("Failed to generate PDF.")
+            return
+        }
         presentShareSheet(items: [tempURL])
     }
 
@@ -238,25 +263,26 @@ struct FloorPlanScreen: View {
         showShareSheet = true
     }
 
-    @MainActor
-    private func renderFloorPlanImage() -> UIImage? {
-        let renderer = ImageRenderer(content:
-            FloorPlanView(
-                floorPlanData: floorPlanData,
-                scanHeading: scanHeading,
-                yawDegrees: displayYawDegrees,
-                isNorthUpEnabled: isNorthUpEnabled,
-                canToggleNorthUp: isNorthUpAvailable,
-                northUpStatusMessage: northUpStatusMessage,
-                retakeTitle: "",
-                onRetake: {},
-                onSave: {},
-                onToggleNorthUp: {},
-                onExport: {}
-            )
-            .frame(width: 390, height: 844)
+    private func exportDocumentView(showsTitleBlock: Bool = true) -> FloorPlanExportView {
+        FloorPlanExportView(
+            floorPlanData: floorPlanData,
+            title: scanTitle ?? "Floor Plan",
+            capturedAt: Date(),
+            showsTitleBlock: showsTitleBlock
         )
-        renderer.scale = UIScreen.main.scale
+    }
+
+    @MainActor
+    private func renderExportImage(scale: CGFloat) -> UIImage? {
+        let renderer = ImageRenderer(content: exportDocumentView())
+        renderer.scale = scale
+        return renderer.uiImage
+    }
+
+    @MainActor
+    private func renderThumbnailImage() -> UIImage? {
+        let renderer = ImageRenderer(content: exportDocumentView(showsTitleBlock: false))
+        renderer.scale = 1
         return renderer.uiImage
     }
 
@@ -325,4 +351,108 @@ struct FloorPlanScreen: View {
         let value = degrees.truncatingRemainder(dividingBy: 360)
         return value < 0 ? value + 360 : value
     }
+}
+
+// MARK: - Document Export Rendering
+
+/// Chrome-free, document-style floor plan render used for PNG/PDF exports and thumbnails.
+/// Sized by the plan's real-world extent (not the phone screen) and finished with a
+/// title block — name, date, area, and a scale bar — like an architectural sheet.
+struct FloorPlanExportView: View {
+    let floorPlanData: FloorPlanData
+    let title: String
+    let capturedAt: Date
+    var showsTitleBlock = true
+
+    private static let margin: CGFloat = 48
+    private static let titleBlockHeight: CGFloat = 96
+
+    private let colors = FloorPlanColors()
+
+    /// Points per meter chosen so the plan's longest side renders around 1000pt.
+    private var pointsPerMeter: CGFloat {
+        let extent = max(floorPlanData.bounds.width, floorPlanData.bounds.height)
+        guard extent > 0 else { return 100 }
+        return min(max(1000 / extent, 50), 250)
+    }
+
+    private var canvasSize: CGSize {
+        let width = floorPlanData.bounds.width * pointsPerMeter + Self.margin * 2
+        let height = floorPlanData.bounds.height * pointsPerMeter + Self.margin * 2
+        return CGSize(width: max(width, 320), height: max(height, 320))
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Canvas { context, size in
+                var drawing = FloorPlanDrawing(data: floorPlanData, colors: colors)
+                drawing.options.showDimensions = true
+                let transform = drawing.fittingTransform(in: size, padding: Self.margin)
+                drawing.draw(in: context, size: size, transform: transform)
+            }
+            .frame(width: canvasSize.width, height: canvasSize.height)
+
+            if showsTitleBlock {
+                titleBlock
+                    .frame(width: canvasSize.width, height: Self.titleBlockHeight)
+            }
+        }
+        .background(colors.background)
+        .environment(\.colorScheme, .light)
+    }
+
+    private var titleBlock: some View {
+        VStack(spacing: 0) {
+            Divider()
+
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ROOMY")
+                        .font(.custom("Silkscreen-Bold", size: 16))
+                        .tracking(1.5)
+                    scaleBar
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(1)
+                    Text(Self.dateFormatter.string(from: capturedAt))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Text(String(format: "%.1f m²", Double(floorPlanData.totalArea)))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(colors.areaText)
+                }
+            }
+            .padding(.horizontal, Self.margin / 2)
+            .frame(maxHeight: .infinity)
+        }
+    }
+
+    private var scaleBar: some View {
+        let candidates: [CGFloat] = [0.5, 1, 2, 5, 10]
+        let maxBarWidth = canvasSize.width * 0.3
+        let meters = candidates.last(where: { $0 * pointsPerMeter <= maxBarWidth }) ?? 0.5
+        let barWidth = meters * pointsPerMeter
+        let label = meters == meters.rounded() ? "\(Int(meters)) m" : String(format: "%.1f m", meters)
+
+        return VStack(alignment: .leading, spacing: 3) {
+            Rectangle()
+                .frame(width: barWidth, height: 3)
+                .foregroundStyle(.primary)
+            Text(label)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
