@@ -14,6 +14,7 @@ struct HomeView: View {
     @State private var scanBounce = 0
     @State private var archiveBounce = 0
     @State private var showPhotoCredit = false
+    @State private var showSplatExperiment = false
 
     // Asset name → original filename (without extension)
     private static let backgroundImageFiles: [(asset: String, filename: String)] = [
@@ -36,6 +37,9 @@ struct HomeView: View {
     var body: some View {
         if #available(iOS 26.0, *) {
             homeContent_iOS26
+                .sheet(isPresented: $showSplatExperiment) {
+                    GaussianSplatViewerScreen()
+                }
                 .fullScreenCover(isPresented: $showScanner) {
                     RoomCaptureSwiftUIView()
                 }
@@ -46,6 +50,9 @@ struct HomeView: View {
                 }
         } else {
             homeContentLegacy
+                .sheet(isPresented: $showSplatExperiment) {
+                    GaussianSplatViewerScreen()
+                }
                 .fullScreenCover(isPresented: $showScanner) {
                     RoomCaptureSwiftUIView()
                 }
@@ -156,7 +163,9 @@ struct HomeView: View {
                     .frame(maxWidth: 362)
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 230)
+                .padding(.bottom, 8)
+                splatExperimentButton
+                    .padding(.bottom, 180)
             }
             .overlay(alignment: .bottomTrailing) {
                 photoCreditButton
@@ -170,6 +179,20 @@ struct HomeView: View {
     }
 
     // MARK: - Legacy (pre-iOS 26)
+
+    private var splatExperimentButton: some View {
+        Button {
+            showSplatExperiment = true
+        } label: {
+            Label("Gaussian Splats · Experimental", systemImage: "cube.transparent")
+                .font(.footnote.weight(.medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.regularMaterial, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .padding(.bottom, 12)
+    }
 
     private var homeContentLegacy: some View {
         ZStack {
@@ -220,6 +243,7 @@ struct HomeView: View {
                 .frame(maxWidth: 362)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
+                splatExperimentButton
             }
         }
         .overlay(alignment: .bottomTrailing) {

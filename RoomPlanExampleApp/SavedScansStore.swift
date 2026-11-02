@@ -8,35 +8,14 @@ Persists saved scans to disk and loads them for review.
 import Foundation
 import UIKit
 
-struct SavedScanRecord: Codable, Identifiable {
-    let id: String
-    let createdAt: Date
-    let title: String
-    let totalArea: Double
-
-    var subtitle: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.timeStyle = .short
-        return "\(dateFormatter.string(from: createdAt)) • \(formatArea(totalArea))"
-    }
-
-    private func formatArea(_ area: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.maximumFractionDigits = 1
-        formatter.minimumFractionDigits = 1
-        formatter.decimalSeparator = ","
-        let value = formatter.string(from: NSNumber(value: area)) ?? String(format: "%.1f", area)
-        return "\(value) m²"
-    }
-}
-
 struct SavedScansStore {
     private let fileManager = FileManager.default
 
-    private var rootURL: URL {
-        let base = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("SavedScans", isDirectory: true)
+    private let rootURL: URL
+
+    init(rootURL: URL? = nil) {
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        self.rootURL = rootURL ?? base.appendingPathComponent("SavedScans", isDirectory: true)
     }
 
     private var indexURL: URL {
@@ -60,12 +39,7 @@ struct SavedScansStore {
     }
 
     func loadIndex() -> [SavedScanRecord] {
-        guard let data = try? Data(contentsOf: indexURL) else {
-            return []
-        }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return (try? decoder.decode([SavedScanRecord].self, from: data)) ?? []
+        (try? RoomPhotoMetadataIndex(url: indexURL).load()) ?? []
     }
 
     func saveScan(
@@ -91,7 +65,7 @@ struct SavedScansStore {
 
         let exportDataURL = scanURL.appendingPathComponent("floorplan.json")
         let exportDataPayload = try encoder.encode(exportData)
-        try exportDataPayload.write(to: exportDataURL)
+        try exportDataPayload.write(to: exportDataURL, options: .atomic)
 
         let thumbnailURL = scanURL.appendingPathComponent("thumbnail.png")
         if let thumbnailData = thumbnail.pngData() {
@@ -114,7 +88,7 @@ struct SavedScansStore {
         encoder.dateEncodingStrategy = .iso8601
 
         let exportDataURL = scanURL.appendingPathComponent("floorplan.json")
-        try encoder.encode(exportData).write(to: exportDataURL)
+        try encoder.encode(exportData).write(to: exportDataURL, options: .atomic)
 
         if let thumbnailData = thumbnail.pngData() {
             try thumbnailData.write(to: scanURL.appendingPathComponent("thumbnail.png"))
@@ -127,23 +101,19 @@ struct SavedScansStore {
                 id: old.id,
                 createdAt: old.createdAt,
                 title: old.title,
-                totalArea: exportData.totalArea
+                totalArea: exportData.totalArea,
+                roomDescription: old.roomDescription
             )
             try writeIndex(index)
         }
     }
 
     func renameScan(id: String, to title: String) throws {
-        var index = loadIndex()
-        guard let position = index.firstIndex(where: { $0.id == id }) else { return }
-        let old = index[position]
-        index[position] = SavedScanRecord(
-            id: old.id,
-            createdAt: old.createdAt,
-            title: title,
-            totalArea: old.totalArea
-        )
-        try writeIndex(index)
+        try RoomPhotoMetadataIndex(url: indexURL).rename(id: id, title: title)
+    }
+
+    func acceptPhotoSuggestion(id: String, draft: RoomPhotoSuggestionDraft) throws {
+        try RoomPhotoMetadataIndex(url: indexURL).accept(id: id, draft: draft)
     }
 
     func deleteScan(id: String) throws {
@@ -157,10 +127,7 @@ struct SavedScansStore {
     }
 
     private func writeIndex(_ index: [SavedScanRecord]) throws {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        try encoder.encode(index).write(to: indexURL)
+        try RoomPhotoMetadataIndex(url: indexURL).write(index)
     }
 
     func loadFloorPlanExport(for scanId: String) -> FloorPlanExportData? {

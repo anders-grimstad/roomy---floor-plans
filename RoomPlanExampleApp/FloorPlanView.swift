@@ -88,8 +88,8 @@ struct FloorPlanDrawing {
     /// matching the conversionscript.py / SVGExporter mapping:
     ///   x_px = (x - minX) * scale + left
     ///   y_px = (maxY - y) * scale + top
-    func fittingTransform(in size: CGSize, padding: CGFloat = 60) -> CGAffineTransform {
-        let bounds = data.bounds
+    func fittingTransform(in size: CGSize, padding: CGFloat = 60, including annotationBounds: CGRect? = nil) -> CGAffineTransform {
+        let bounds = data.bounds.union(annotationBounds ?? .null)
         guard bounds.width > 0 && bounds.height > 0 else {
             return .identity
         }
@@ -438,6 +438,9 @@ struct FloorPlanView: View {
     let onSave: () -> Void
     let onToggleNorthUp: () -> Void
     let onExport: () -> Void
+    var annotationPreview: FloorPlanAnnotationPreview? = nil
+    var annotationRotationRadians: CGFloat = 0
+    var onAnnotate: (() -> Void)? = nil
     let colors = FloorPlanColors()
 
     @State private var scale: CGFloat = 1.0
@@ -467,8 +470,10 @@ struct FloorPlanView: View {
                             showDimensions: showDimensions
                         )
                     )
-                    let transform = drawing.fittingTransform(in: size)
+                    let transform = drawing.fittingTransform(in: size,
+                        including: annotationPreview?.document.geometry.displayedWorldBounds(rotationRadians: annotationRotationRadians))
                     drawing.draw(in: context, size: size, transform: transform)
+                    annotationPreview?.draw(in: context, rotationRadians: annotationRotationRadians, worldToView: transform)
                 }
                 .scaleEffect(scale)
                 .offset(CGSize(
@@ -627,6 +632,14 @@ struct FloorPlanView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(canToggleNorthUp ? Color.secondary : Color.orange)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let onAnnotate {
+                Button(action: onAnnotate) {
+                    Label("Annotate plan", systemImage: "pencil.tip.crop.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
             }
             
             if #available(iOS 26.0, *) {

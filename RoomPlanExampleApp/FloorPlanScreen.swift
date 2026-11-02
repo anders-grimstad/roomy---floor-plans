@@ -31,6 +31,10 @@ struct FloorPlanScreen: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     @State private var toastMessage: String?
+    @State private var annotationDocument: FloorPlanAnnotationDocument?
+    @State private var annotationsLoaded = false
+    @State private var annotationsFailedToLoad = false
+    @State private var showAnnotationEditor = false
 
     init(
         capturedRoom: CapturedRoom,
@@ -77,10 +81,16 @@ struct FloorPlanScreen: View {
             onRetake: handleRetake,
             onSave: saveScan,
             onToggleNorthUp: toggleNorthUp,
-            onExport: { showExportFormatPicker = true }
+            onExport: { showExportFormatPicker = true },
+            annotationPreview: annotationPreview,
+            annotationRotationRadians: annotationRotationRadians,
+            onAnnotate: annotationAction
         )
         .statusBarHidden(false)
-        .onAppear { generateFloorPlan() }
+        .onAppear {
+            generateFloorPlan()
+            loadAnnotations()
+        }
         .onChange(of: isNorthUpEnabled, initial: false) {
             applyFloorPlanOrientation()
         }
@@ -92,6 +102,23 @@ struct FloorPlanScreen: View {
         }
         .sheet(isPresented: $showShareSheet) {
             ActivityViewControllerRepresentable(items: shareItems)
+        }
+        .fullScreenCover(isPresented: $showAnnotationEditor) {
+            if #available(iOS 27.0, *), let savedScanId {
+                FloorPlanAnnotationEditor(
+                    document: annotationDocument,
+                    canonicalGeometry: annotationGeometry,
+                    displayedPlan: floorPlanData,
+                    rotationRadians: annotationRotationRadians,
+                    onSave: { document in
+                        try FloorPlanAnnotationStore(scanFolder: SavedScansStore().scanFolderURL(for: savedScanId)).save(document)
+                        annotationDocument = document
+                        toastMessage = "Annotations saved"
+                    },
+                    onClose: { showAnnotationEditor = false }
+                )
+                .interactiveDismissDisabled()
+            }
         }
         .alert(alertTitle, isPresented: $showAlert) {
             Button("OK") { }
@@ -124,6 +151,57 @@ struct FloorPlanScreen: View {
     private func handleRetake() {
         dismiss()
         onRetake?()
+    }
+
+    // MARK: - Annotations
+
+    private var annotationPreview: FloorPlanAnnotationPreview? {
+        annotationDocument.flatMap(FloorPlanAnnotationPreview.init)
+    }
+
+    private var annotationGeometry: FloorPlanAnnotationGeometry {
+        if let annotationDocument { return annotationDocument.geometry }
+        let rawPlan = baseFloorPlanData.oriented(
+            northAlignment: isNorthUpAvailable ? northAlignment : nil,
+            sourceIsNorthUpNormalized: sourceIsNorthUpNormalized,
+            desiredNorthUp: false
+        )
+        return FloorPlanAnnotationGeometry(worldBounds: rawPlan.bounds)
+    }
+
+    private var annotationRotationRadians: CGFloat {
+        guard isNorthUpEnabled, isNorthUpAvailable, let northAlignment else { return 0 }
+        return -CGFloat(northAlignment.normalizedRoomToNorthYawDegrees) * .pi / 180
+    }
+
+    private var annotationAction: (() -> Void)? {
+        if #available(iOS 27.0, *), !annotationsFailedToLoad,
+           floorPlanData.bounds.width > 0, floorPlanData.bounds.height > 0 {
+            return openAnnotations
+        }
+        return nil
+    }
+
+    private func loadAnnotations() {
+        guard !annotationsLoaded, let savedScanId else { return }
+        annotationsLoaded = true
+        do {
+            annotationDocument = try FloorPlanAnnotationStore(scanFolder: SavedScansStore().scanFolderURL(for: savedScanId)).load()
+            if let annotationDocument, FloorPlanAnnotationPreview(document: annotationDocument) == nil {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+        } catch {
+            annotationsFailedToLoad = true
+            showError("Saved annotations could not be opened. Their data has been preserved. \(error.localizedDescription)")
+        }
+    }
+
+    private func openAnnotations() {
+        if savedScanId == nil { saveScan() }
+        guard savedScanId != nil else { return }
+        loadAnnotations()
+        guard !annotationsFailedToLoad else { return }
+        showAnnotationEditor = true
     }
 
     // MARK: - Save
@@ -268,7 +346,9 @@ struct FloorPlanScreen: View {
             floorPlanData: floorPlanData,
             title: scanTitle ?? "Floor Plan",
             capturedAt: Date(),
-            showsTitleBlock: showsTitleBlock
+            showsTitleBlock: showsTitleBlock,
+            annotationPreview: annotationPreview,
+            annotationRotationRadians: annotationRotationRadians
         )
     }
 
@@ -363,22 +443,28 @@ struct FloorPlanExportView: View {
     let title: String
     let capturedAt: Date
     var showsTitleBlock = true
+    var annotationPreview: FloorPlanAnnotationPreview? = nil
+    var annotationRotationRadians: CGFloat = 0
 
     private static let margin: CGFloat = 48
     private static let titleBlockHeight: CGFloat = 96
 
     private let colors = FloorPlanColors()
 
+    private var drawingBounds: CGRect {
+        floorPlanData.bounds.union(annotationPreview?.document.geometry.displayedWorldBounds(rotationRadians: annotationRotationRadians) ?? .null)
+    }
+
     /// Points per meter chosen so the plan's longest side renders around 1000pt.
     private var pointsPerMeter: CGFloat {
-        let extent = max(floorPlanData.bounds.width, floorPlanData.bounds.height)
+        let extent = max(drawingBounds.width, drawingBounds.height)
         guard extent > 0 else { return 100 }
         return min(max(1000 / extent, 50), 250)
     }
 
     private var canvasSize: CGSize {
-        let width = floorPlanData.bounds.width * pointsPerMeter + Self.margin * 2
-        let height = floorPlanData.bounds.height * pointsPerMeter + Self.margin * 2
+        let width = drawingBounds.width * pointsPerMeter + Self.margin * 2
+        let height = drawingBounds.height * pointsPerMeter + Self.margin * 2
         return CGSize(width: max(width, 320), height: max(height, 320))
     }
 
@@ -387,8 +473,9 @@ struct FloorPlanExportView: View {
             Canvas { context, size in
                 var drawing = FloorPlanDrawing(data: floorPlanData, colors: colors)
                 drawing.options.showDimensions = true
-                let transform = drawing.fittingTransform(in: size, padding: Self.margin)
+                let transform = drawing.fittingTransform(in: size, padding: Self.margin, including: drawingBounds)
                 drawing.draw(in: context, size: size, transform: transform)
+                annotationPreview?.draw(in: context, rotationRadians: annotationRotationRadians, worldToView: transform)
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
 

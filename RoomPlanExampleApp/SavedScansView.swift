@@ -14,6 +14,7 @@ struct SavedScansView: View {
     @State private var renameTarget: SavedScanRecord?
     @State private var renameText = ""
     @State private var preview3D: USDZPreviewItem?
+    @State private var photoSuggestionTarget: SavedScanRecord?
     @State private var showError = false
     @State private var errorMessage = ""
 
@@ -48,6 +49,9 @@ struct SavedScansView: View {
             USDZPreviewRepresentable(url: item.url)
                 .ignoresSafeArea()
         }
+        .sheet(item: $photoSuggestionTarget, onDismiss: reload) { record in
+            RoomPhotoSuggestionView(record: record, onSaved: reload)
+        }
     }
 
     // MARK: - List
@@ -78,7 +82,20 @@ struct SavedScansView: View {
                     }
                     .tint(.indigo)
                 }
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    Button {
+                        photoSuggestionTarget = record
+                    } label: {
+                        Label("Photo Suggestions", systemImage: "photo.badge.sparkles")
+                    }
+                    .tint(.purple)
+                }
                 .contextMenu {
+                    Button {
+                        photoSuggestionTarget = record
+                    } label: {
+                        Label("Photo Suggestions", systemImage: "photo.badge.sparkles")
+                    }
                     if store.hasUSDZ(for: record.id) {
                         Button {
                             preview3D = USDZPreviewItem(url: store.roomUSDZURL(for: record.id))
@@ -208,6 +225,12 @@ private struct SavedScanRow: View {
                 Text(record.subtitle)
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
+                if let description = record.roomDescription, !description.isEmpty {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
 
             Spacer()
@@ -223,7 +246,7 @@ private struct SavedScanRow: View {
                 .accessibilityLabel("View in 3D")
             }
         }
-        .frame(height: 76)
+        .frame(minHeight: 76)
         .onAppear {
             thumbnail = store.loadThumbnail(for: record.id)
             hasModel = store.hasUSDZ(for: record.id)

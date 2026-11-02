@@ -25,6 +25,17 @@
 		FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000001 /* FloorPlanGenerator.swift */; };
 		FP00000228D0000000000002 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000002 /* FloorPlanView.swift */; };
 		FP00000428D0000000000004 /* SVGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FP00000028D0000000000004 /* SVGExporter.swift */; };
+		38AFC268C81E1F0901815C51 /* FloorPlanGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0333605E32E543AC7B28F6F /* FloorPlanGeometry.swift */; };
+		A9C720FAB3737F4B690C5C5C /* FloorPlanAnnotationGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBE6075395AB4341B2EDCDB /* FloorPlanAnnotationGeometry.swift */; };
+		E0854B7E3185B9F78D67C063 /* FloorPlanAnnotations.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80AAEC9DD10A5FD80D6E490 /* FloorPlanAnnotations.swift */; };
+		54AC1D14E3030FB58328CD98 /* RoomPhotoMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34184568832AF5FA755E3C6 /* RoomPhotoMetadata.swift */; };
+		1A7FD325D2A32862D8833D28 /* RoomPhotoSuggestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABA233D29CD653010CCC016 /* RoomPhotoSuggestionView.swift */; };
+		12013284D7F172029113E689 /* GaussianSplatFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD251A0089CD74B9B303A393 /* GaussianSplatFile.swift */; };
+		4A6C381BC1D35549C8ACBCBA /* GaussianSplatViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53606021602E030CF6BE6579 /* GaussianSplatViewer.swift */; };
+		505A1F4AA8E4CC091D264B2A /* FloorPlanAnnotationRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4317168E9DC1AA42D98271 /* FloorPlanAnnotationRendering.swift */; };
+		7C3F4A26FF594D8E8C98F941 /* RoomPhotoSuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8671CC168468F778BD3BB4 /* RoomPhotoSuggestionService.swift */; };
+		48D18E224C963E118D2A9F33 /* GaussianSplatRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BF81C5CCD374216FB264CE /* GaussianSplatRendering.swift */; };
+		5CE264B0E306E7EB7C8D3990 /* SplatAssets in Resources */ = {isa = PBXBuildFile; fileRef = B35F08AD4A705676CCFE3B21 /* SplatAssets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +62,17 @@
 		FP00000028D0000000000004 /* SVGExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGExporter.swift; sourceTree = "<group>"; };
 		FP00000728D0000000000007 /* FloorPlanExportData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanExportData.swift; sourceTree = "<group>"; };
 		FP00000828D0000000000008 /* SavedScansStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedScansStore.swift; sourceTree = "<group>"; };
+		A0333605E32E543AC7B28F6F /* FloorPlanGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanGeometry.swift; sourceTree = "<group>"; };
+		3CBE6075395AB4341B2EDCDB /* FloorPlanAnnotationGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanAnnotationGeometry.swift; sourceTree = "<group>"; };
+		B80AAEC9DD10A5FD80D6E490 /* FloorPlanAnnotations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanAnnotations.swift; sourceTree = "<group>"; };
+		F34184568832AF5FA755E3C6 /* RoomPhotoMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPhotoMetadata.swift; sourceTree = "<group>"; };
+		7ABA233D29CD653010CCC016 /* RoomPhotoSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPhotoSuggestionView.swift; sourceTree = "<group>"; };
+		BD251A0089CD74B9B303A393 /* GaussianSplatFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaussianSplatFile.swift; sourceTree = "<group>"; };
+		53606021602E030CF6BE6579 /* GaussianSplatViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaussianSplatViewer.swift; sourceTree = "<group>"; };
+		CB4317168E9DC1AA42D98271 /* FloorPlanAnnotationRendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlanAnnotationRendering.swift; sourceTree = "<group>"; };
+		CA8671CC168468F778BD3BB4 /* RoomPhotoSuggestionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPhotoSuggestionService.swift; sourceTree = "<group>"; };
+		55BF81C5CCD374216FB264CE /* GaussianSplatRendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaussianSplatRendering.swift; sourceTree = "<group>"; };
+		B35F08AD4A705676CCFE3B21 /* SplatAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SplatAssets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +117,16 @@
 			isa = PBXGroup;
 			children = (
 				FP00000028D0000000000001 /* FloorPlanGenerator.swift */,
+				55BF81C5CCD374216FB264CE /* GaussianSplatRendering.swift */,
+				CA8671CC168468F778BD3BB4 /* RoomPhotoSuggestionService.swift */,
+				CB4317168E9DC1AA42D98271 /* FloorPlanAnnotationRendering.swift */,
+				53606021602E030CF6BE6579 /* GaussianSplatViewer.swift */,
+				BD251A0089CD74B9B303A393 /* GaussianSplatFile.swift */,
+				7ABA233D29CD653010CCC016 /* RoomPhotoSuggestionView.swift */,
+				F34184568832AF5FA755E3C6 /* RoomPhotoMetadata.swift */,
+				B80AAEC9DD10A5FD80D6E490 /* FloorPlanAnnotations.swift */,
+				3CBE6075395AB4341B2EDCDB /* FloorPlanAnnotationGeometry.swift */,
+				A0333605E32E543AC7B28F6F /* FloorPlanGeometry.swift */,
 				FP00000728D0000000000007 /* FloorPlanExportData.swift */,
 				FP00000028D0000000000002 /* FloorPlanView.swift */,
 				FP00000028D0000000000004 /* SVGExporter.swift */,
@@ -102,6 +134,7 @@
 				4E1F0A6C3D8A4B1C9E2F7710 /* ScanHeading.swift */,
 				4E1F0A6C3D8A4B1C9E2F7720 /* HeadingManager.swift */,
 				ACEF94B92820AD2400776A9D /* Assets.xcassets */,
+				B35F08AD4A705676CCFE3B21 /* SplatAssets */,
 				216BD5BC2F69A4690092BA03 /* Silkscreen-Bold.ttf */,
 				216BD5BD2F69A4690092BA03 /* Silkscreen-Regular.ttf */,
 				ACEF94BB2820AD2400776A9D /* LaunchScreen.storyboard */,
@@ -189,6 +222,7 @@
 				216BD5BF2F69A4690092BA03 /* Silkscreen-Regular.ttf in Resources */,
 				ACEF94BD2820AD2400776A9D /* LaunchScreen.storyboard in Resources */,
 				ACEF94BA2820AD2400776A9D /* Assets.xcassets in Resources */,
+				5CE264B0E306E7EB7C8D3990 /* SplatAssets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,6 +237,16 @@
 				211E71F02F55A11800BB99FE /* UnsupportedDeviceView.swift in Sources */,
 				211E71F42F55A18900BB99FE /* SavedScansView.swift in Sources */,
 				FP00000128D0000000000001 /* FloorPlanGenerator.swift in Sources */,
+				48D18E224C963E118D2A9F33 /* GaussianSplatRendering.swift in Sources */,
+				7C3F4A26FF594D8E8C98F941 /* RoomPhotoSuggestionService.swift in Sources */,
+				505A1F4AA8E4CC091D264B2A /* FloorPlanAnnotationRendering.swift in Sources */,
+				4A6C381BC1D35549C8ACBCBA /* GaussianSplatViewer.swift in Sources */,
+				12013284D7F172029113E689 /* GaussianSplatFile.swift in Sources */,
+				1A7FD325D2A32862D8833D28 /* RoomPhotoSuggestionView.swift in Sources */,
+				54AC1D14E3030FB58328CD98 /* RoomPhotoMetadata.swift in Sources */,
+				E0854B7E3185B9F78D67C063 /* FloorPlanAnnotations.swift in Sources */,
+				A9C720FAB3737F4B690C5C5C /* FloorPlanAnnotationGeometry.swift in Sources */,
+				38AFC268C81E1F0901815C51 /* FloorPlanGeometry.swift in Sources */,
 				FP00000228D0000000000002 /* FloorPlanView.swift in Sources */,
 				4E1F0A6C3D8A4B1C9E2F7711 /* ScanHeading.swift in Sources */,
 				211E71F82F55A1C000BB99FE /* HomeView.swift in Sources */,
